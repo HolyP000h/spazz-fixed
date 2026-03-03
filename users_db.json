@@ -1,0 +1,112 @@
+[
+    {
+        "id": "1",
+        "username": "Spazzmaster",
+        "type": "user",
+        "credits": 500,
+        "lat": 34.052,
+        "lon": -118.243,
+        "gender": "male",
+        "looking_for": "female",
+        "age": 25,
+        "bio": "The Engine Master."
+    },
+    {
+        "id": "2",
+        "username": "Rizzqueen",
+        "type": "user",
+        "credits": 100,
+        "lat": 34.0521,
+        "lon": -118.2431,
+        "gender": "female",
+        "looking_for": "male",
+        "age": 30,
+        "bio": "Looking for a king."
+    },
+    {
+        "id": "3",
+        "username": "Chad_Bro",
+        "type": "user",
+        "credits": 50,
+        "lat": 34.0525,
+        "lon": -118.2425,
+        "gender": "male",
+        "looking_for": "female",
+        "age": 22,
+        "bio": "Just lifting weights."
+    },
+    {
+        "id": "4",
+        "username": "CyberVixen",
+        "type": "user",
+        "credits": 250,
+        "lat": 34.0518,
+        "lon": -118.2435,
+        "gender": "female",
+        "looking_for": "male",
+        "age": 24,
+        "bio": "Neon dreams only."
+    },
+    {
+        "id": "5",
+        "username": "Luna_88",
+        "type": "user",
+        "credits": 75,
+        "lat": 34.0523,
+        "lon": -118.2440,
+        "gender": "female",
+        "looking_for": "any",
+        "age": 28,
+        "bio": "Star gazing."
+    },
+    {
+        "id": "wisp_5",
+        "username": "Common Wisp",
+        "type": "wisp",
+        "credits": 0,
+        "lat": 34.05205,
+        "lon": -118.24305,
+        "wisp_class": "whisp-cyan",
+        "value": 5
+    },
+    {
+        "id": "wisp_10",
+        "username": "Steady Wisp",
+        "type": "wisp",
+        "credits": 0,
+        "lat": 34.0519,
+        "lon": -118.2429,
+        "wisp_class": "whisp-cyan",
+        "value": 10
+    },
+    {
+        "id": "wisp_15",
+        "username": "Bright Wisp",
+        "type": "wisp",
+        "credits": 0,
+        "lat": 34.0522,
+        "lon": -118.2433,
+        "wisp_class": "whisp-cyan",
+        "value": 15
+    },
+    {
+        "id": "wisp_20",
+        "username": "Elite Wisp",
+        "type": "wisp",
+        "credits": 0,
+        "lat": 34.0524,
+        "lon": -118.2428,
+        "wisp_class": "whisp-purple",
+        "value": 20
+    },
+    {
+        "id": "wisp_50",
+        "username": "ULTRA Wisp",
+        "type": "wisp",
+        "credits": 0,
+        "lat": 34.0517,
+        "lon": -118.2438,
+        "wisp_class": "whisp-red-underlined",
+        "value": 50
+    }
+]
