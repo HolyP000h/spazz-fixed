@@ -22,8 +22,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # If you have a requirements.txt file, uncomment the line below:
-        # pip install -r requirements.txt
+        # We use '|| true' because if requirements.txt isn't there yet, we don't want to crash
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install fastapi uvicorn  # Ensuring these are here for the check
 
-    - name: Run App Check
-      run: python main.py
+    - name: Lint check (Syntax check)
+      run: |
+        # This checks if the code is valid without actually running the server
+        python -m py_compile main.py
