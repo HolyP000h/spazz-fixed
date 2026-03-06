@@ -159,36 +159,38 @@
     </div>
 
     <script>
-        const userId = "1"; // Your ID
+        const userId = "1"; 
         const core = document.getElementById('core');
         const statusText = document.getElementById('status');
         const card = document.getElementById('discovery-card');
-        const apiPort = "8001"; // Port matched from main.py
-        
+        const apiPort = "8001"; 
+        const ADMIN_KEY = "SpazzPass123"; // Make sure this matches your .env!
+
         let lockedUserId = null;
         let currentNearbyUserId = null;
 
-        // Set up event listeners securely
         document.getElementById('meet-btn').addEventListener('click', meetUser);
         document.getElementById('lock-btn').addEventListener('click', toggleLock);
 
         async function updateApp() {
             try {
-                // Fetch from the correct port
                 const res = await fetch(`http://127.0.0.1:${apiPort}/users`);
-                const users = await res.json();
+                const data = await res.json();
                 
-                // Find yourself
+                // FIX 1: Pydantic sends users inside a "users" list
+                const users = data.users || data; 
+                
                 const me = users.find(u => String(u.id) === userId);
                 if (!me) return;
                 
                 let closestDist = 999;
                 let nearbyUser = null;
 
-                // Check proximity to others
                 users.forEach(u => {
-                    if (String(u.id) !== userId && u.type !== "wisp") {
+                    if (String(u.id) !== userId && u.type === "player") {
                         const d = Math.sqrt(Math.pow(u.lat - me.lat, 2) + Math.pow(u.lon - me.lon, 2));
+                        
+                        // FIX 2: Only show users if they pass the "Safety Shield" distance
                         if (d < closestDist) {
                             closestDist = d;
                             nearbyUser = u;
@@ -196,57 +198,46 @@
                     }
                 });
 
-                // VISUAL & LOCK LOGIC
                 if (nearbyUser && closestDist < 0.001) {
-                    
                     if (!lockedUserId || String(nearbyUser.id) === lockedUserId) {
                         currentNearbyUserId = String(nearbyUser.id);
                         core.classList.add('spazzing');
                         statusText.innerText = "Entity Detected";
                         statusText.style.color = "#ff0033";
                         
-                        // Keep card content blind until "Meet" is clicked
                         if (document.getElementById('revealed-content').style.display === 'none') {
+                            document.getElementById('username').innerText = "ENCRYPTED SIGNAL";
+                        } else {
                             document.getElementById('username').innerText = nearbyUser.username;
                         }
-                        
                         card.classList.add('active');
                     }
-                } else {
-                    if (!lockedUserId) {
-                        currentNearbyUserId = null;
-                        core.classList.remove('spazzing');
-                        statusText.innerText = "Scanning the Void...";
-                        statusText.style.color = "#bc13fe";
-                        card.classList.remove('active');
-                        // Reset card to blind state
-                        document.getElementById('blind-content').style.display = 'block';
-                        document.getElementById('revealed-content').style.display = 'none';
-                        const meetBtn = document.getElementById('meet-btn');
-                        meetBtn.innerText = "🤝 MEET";
-                        meetBtn.removeEventListener('click', sendPing);
-                        meetBtn.addEventListener('click', meetUser);
-                    }
+                } else if (!lockedUserId) {
+                    resetRadar();
                 }
 
             } catch (e) { console.log("Engine offline..."); }
         }
 
-        // Blind Encounter: Reveal User
+        function resetRadar() {
+            currentNearbyUserId = null;
+            core.classList.remove('spazzing');
+            statusText.innerText = "Scanning the Void...";
+            statusText.style.color = "#bc13fe";
+            card.classList.remove('active');
+            document.getElementById('blind-content').style.display = 'block';
+            document.getElementById('revealed-content').style.display = 'none';
+        }
+
         function meetUser() {
-            document.getElementById('blind-content').style.display = 'none';
-            document.getElementById('revealed-content').style.display = 'block';
-            const meetBtn = document.getElementById('meet-btn');
-            meetBtn.innerText = "SEND PING";
-            meetBtn.removeEventListener('click', meetUser);
-            meetBtn.addEventListener('click', sendPing);
-            
-            if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
+            // Only reveal if we actually have a nearby user
+            if (currentNearbyUserId) {
+                document.getElementById('blind-content').style.display = 'none';
+                document.getElementById('revealed-content').style.display = 'block';
+                updateApp(); // Refresh to show the name
             }
         }
 
-        // Lock onto a specific user
         function toggleLock() {
             const lockBtn = document.getElementById('lock-btn');
             if (lockedUserId) {
@@ -260,32 +251,18 @@
             }
         }
 
-        function sendPing() {
-            alert("Ping sent to " + document.getElementById('username').innerText);
-        }
-
-        // Movement Controls
+        // FIX 3: Pro-Level Movement (Handles Wisps & Safety automatically)
         window.addEventListener('keydown', async (e) => {
-            // 1. Get current position from your data
-            const res = await fetch(`http://127.0.0.1:${apiPort}/users`);
-            const users = await res.json();
-            const me = users.find(u => String(u.id) === userId);
-            if (!me) return;
-
-            let newLat = me.lat;
-            let newLon = me.lon;
-            const step = 0.0001; // Step size
-
-            // 2. Calculate new position
-            if (e.key === "ArrowUp") newLat += step;
-            if (e.key === "ArrowDown") newLat -= step;
-            if (e.key === "ArrowLeft") newLon -= step;
-            if (e.key === "ArrowRight") newLon += step;
+            let direction = "";
+            if (e.key === "ArrowUp") direction = "north";
+            if (e.key === "ArrowDown") direction = "south";
+            if (e.key === "ArrowLeft") direction = "west";
+            if (e.key === "ArrowRight") direction = "east";
             
-            // 3. Send new position to backend
-            if (newLat !== me.lat || newLon !== me.lon) {
-                await fetch(`http://127.0.0.1:${apiPort}/teleport/${userId}?lat=${newLat}&lon=${newLon}`, {method: 'POST'});
-                updateApp(); // Refresh radar
+            if (direction) {
+                // We use the /move endpoint now! It's much smarter.
+                await fetch(`http://127.0.0.1:${apiPort}/move/${userId}/${direction}/${ADMIN_KEY}`, {method: 'POST'});
+                updateApp(); 
             }
         });
 
