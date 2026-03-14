@@ -5,8 +5,6 @@ import asyncio
 import random
 <<<<<<< HEAD
 import winsound
-=======
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +13,9 @@ from typing import List, Optional
 
 app = FastAPI()
 
-<<<<<<< HEAD
 # Enable CORS so the HTML file can talk to the backend
-=======
 # Enable CORS
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
+ 8c8a0a857a81c8b47569e12edc67db6caec78bbd
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,12 +40,8 @@ class User(BaseModel):
     nudges_balance: int = 10
     is_premium: bool = False
     last_reward_time: float = 0.0
-<<<<<<< HEAD
-=======
     # --- NEW: SHADOW BAN STATUS ---
     is_shadow_banned: bool = False 
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
-
     def to_dict(self):
         return self.dict()
 
@@ -60,10 +52,7 @@ def save_to_db(users_list: List[User]):
     data = {"users": [u.to_dict() for u in users_list]}
     with open(DB_FILE, 'w') as f:
         json.dump(data, f, indent=4)
-<<<<<<< HEAD
     # print("💾 [DATABASE]: Sync complete.")
-=======
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
 
 def load_from_db() -> List[User]:
     try:
@@ -87,20 +76,16 @@ def create_entity(entity_id, username, e_type="user", lat=0.0, lon=0.0, age=25, 
     if "bot" in username.lower() or "spam" in username.lower():
         shadow_flag = True
 
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
     return User(
         id=str(entity_id),
         username=username,
         type=e_type,
         lat=lat,
         lon=lon,
-<<<<<<< HEAD
         wisp_class=wisp_class
-=======
         age=age,
         wisp_class=wisp_class,
         is_shadow_banned=shadow_flag
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
     )
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -133,7 +118,6 @@ async def ghost_heartbeat():
 
         for entity in all_entities:
             # MOVEMENT for non-player entities
-=======
     print("💓 Ghost Heartbeat pumping on the Legion i9...")
     while True:
         all_entities = load_from_db()
@@ -144,7 +128,6 @@ async def ghost_heartbeat():
             all_entities.append(new_wisp)
 
         for entity in all_entities:
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
             if entity.type != "player":
                 entity.lat += random.uniform(-0.0005, 0.0005)
                 entity.lon += random.uniform(-0.0005, 0.0005)
@@ -227,7 +210,6 @@ def join_game(username: str, age: int, lat: float, lon: float):
         return {"status": "Success", "user": new_user.to_dict()}
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
 
 @app.get("/pulse/{user_id}/{target_id}")
 def get_pulse(user_id: str, target_id: str):
@@ -235,18 +217,15 @@ def get_pulse(user_id: str, target_id: str):
     me = next((u for u in users if u.id == user_id), None)
     them = next((u for u in users if u.id == target_id), None)
     
-<<<<<<< HEAD
     if not me or not them:
         raise HTTPException(status_code=404, detail="User not found")
 =======
     if not me or not them or them.is_shadow_banned:
         raise HTTPException(status_code=404, detail="Target not visible")
->>>>>>> 8c8a0a857a81c8b47569e12edc67db6caec78bbd
 
     dist = calculate_distance(me.lat, me.lon, them.lat, them.lon)
     bearing = calculate_bearing(me.lat, me.lon, them.lat, them.lon)
     
-<<<<<<< HEAD
     # --- PULSE LOGIC ---
     if dist < 0.002: # ~10 feet
         pulse_status = {"mode": "STROBE", "vibe": "SOLID", "speed": 0}
