@@ -1,14 +1,23 @@
-/* The Red Whisp Style */
-.whisp-red {
-    color: #ff0000; /* Pure Red */
-    font-weight: bold;
-    text-decoration: underline;
-    text-decoration-color: #ff4d4d; 
-    text-shadow: 0 0 8px #ff0000, 0 0 15px #ff4d4d; /* Double layer glow */
-    animation: flicker 0.8s ease-in-out infinite; /* Fixed the 'secondary' error */
+/* 1. Make the body transparent so the map is visible */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: transparent !important; /* This is the key! */
+    overflow: hidden;
 }
 
-@keyframes flicker {
-    0%, 100% { opacity: 1; filter: brightness(1); }
-    50% { opacity: 0.8; filter: brightness(1.5); } /* Makes it actually 'pulse' */
+/* 2. Force the map to fill the entire screen behind the UI */
+#map {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1; /* Puts the map in the absolute background */
+}
+
+/* 3. Ensure your UI container doesn't have a black background */
+.pulse-container, .discovery-card {
+    background: rgba(0, 0, 0, 0.7); /* Semi-transparent black */
+    backdrop-filter: blur(10px); /* Makes the map look blurry behind the UI */
 }
