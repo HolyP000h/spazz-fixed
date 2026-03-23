@@ -3,7 +3,7 @@ var map = L.map('map', { zoomControl: false }).setView([39.3331, -82.9824], 14);
 
 // 2. Add Dark Matter tiles
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: 'SPAZZ Stealth Radar',
+    attribution: 'SPAZZ Stealth Radar | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 20
 }).addTo(map);

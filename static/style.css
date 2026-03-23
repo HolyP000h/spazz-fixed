@@ -1,45 +1,40 @@
-/* 1. Global Setup */
-/* This forces the map to actually take up space */
+/* 1. Force the page to fill the screen */
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: black;
+    background-color: #000; /* Deep space black */
+    overflow: hidden;
 }
 
+/* 2. The Map Container (The Foundation) */
 #map {
-    height: 100vh; /* 100% of the Viewport Height */
-    width: 100vw;  /* 100% of the Viewport Width */
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 0;
-}
-
-/* 2. The Map (The Foundation) */
-#map {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
     height: 100vh;
-    z-index: 1; /* Keep map just above the background */
-    background: #000;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1; /* Map stays in back */
 }
 
-/* 3. The UI Overlay (The Glass Look) */
+/* 3. The UI Overlay (The Glass) */
 .pulse-container {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 100; /* High z-index to stay on top of map */
-    text-align: center;
-    pointer-events: none;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    padding: 20px;
-    border-radius: 50%;
+    z-index: 10; /* Higher than map */
+    pointer-events: none; /* Let clicks pass through to the map */
+}
+
+.status-label {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    color: #00ffff;
+    font-family: 'Courier New', Courier, monospace;
+    text-shadow: 0 0 5px #00ffff;
 }
 
 .logo-text {
