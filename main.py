@@ -62,40 +62,47 @@ def load_from_db() -> List[User]:
     except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError):
         return []
 
-# --- 4. THE HEARTBEAT ---
-async def ghost_heartbeat():
-    print("💓 Ghost Heartbeat pumping on the Legion i9...")
-    while True:
-        all_entities = load_from_db()
+# --- 4. THE HEARTBEAT ---async def startup_event():
+    # 1. Start the movement heartbeat
+    asyncio.create_task  (ghost_heartbeat())
+    
+    # 2. Mass Populate if the map is empty
+    all_entities = load_from_db()
+    if len(all_entities) < 10:  # If the "Void" is too empty...
+        print("🌌 Mass Manifesting entities into the Void...")
         
-        # Keep a healthy amount of wisps (Max 15)
-        if len(all_entities) < 15:
-            new_id = f"wisp_{random.randint(100, 999)}"
-            new_wisp = User(
+        for i in range(50): # Let's drop 50 at once
+            new_id = f"gen_{random.randint(1000, 9999)}"
+            
+            # 🎲 Determine the "DNA" of this entity
+            roll = random.random()
+            if roll < 0.1: # 10% Real Users (Purple)
+                u_type, u_name, u_class = "user", f"Shadow_{i}", None
+            elif roll < 0.3: # 20% Red Phantoms (Flickering Red)
+                u_type, u_name, u_class = "wisp", "Red Phantom", "whisp-red"
+            else: # 70% Common Wisps (Cyan)
+                u_type, u_name, u_class = "wisp", "Common Wisp", "whisp-cyan"
+
+            new_entity = User(
                 id=new_id,
-                username="Common Wisp",
-                type="wisp",
-                lat=39.333 + random.uniform(-0.01, 0.01),
-                lon=-82.982 + random.uniform(-0.01, 0.01),
-                wisp_class="whisp-cyan",
-                credits=0,  # Add these defaults
+                username=u_name,
+                type=u_type,
+                lat=39.333 + random.uniform(-0.02, 0.02), # Spread them out more
+                lon=-82.982 + random.uniform(-0.02, 0.02),
+                wisp_class=u_class,
+                credits=random.randint(0, 50),
                 gender="other",
-                age=0
+                age=random.randint(18, 99)
             )
-            all_entities.append(new_wisp)
-
-        # Move everyone slightly (The Radar Pulse)
-        for entity in all_entities:
-            entity.lat += random.uniform(-0.0001, 0.0001)
-            entity.lon += random.uniform(-0.0001, 0.0001)
-
+            all_entities.append(new_entity)
+            
         save_to_db(all_entities)
-        await asyncio.sleep(5)
+        print(f"🚀 Spazz Engine: {len(all_entities)} Signals Locked and Loaded.")
 
-# --- 5. STARTUP & ENDPOINTS ---
-@app.on_event("startup")
+      # --- 5. STARTUP &  ENDPOINTS --- 
+
 async def startup_event():
-    asyncio.create_task(ghost_heartbeat())
+    asyncio.create_task            (ghost_heartbeat()) # type: ignore
     print("🚀 Spazz Engine: Online. Access at http://localhost:8001")
 
 @app.get("/api/users")
