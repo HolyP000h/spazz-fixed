@@ -109,4 +109,12 @@
         "wisp_class": "whisp-red-underlined",
         "value": 50
     }
+
+
+if user.is_premium:
+    user.color = "Gold"  # Premium users glow on the radar
+else:
+    user.color = "Blue" 
 ]
+
+
