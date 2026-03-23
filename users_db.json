@@ -1,130 +1,42 @@
-{
-    "users": [
-        {
-            "id": "1",
-            "username": "Spazzmaster",
-            "type": "user",
-            "lat": 39.33275957813854,
-            "lon": -82.9823791690572,
-            "credits": 500,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": true,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "2",
-            "username": "Rizzqueen",
-            "type": "user",
-            "lat": 39.334153852056545,
-            "lon": -82.98294188273913,
-            "credits": 100,
-            "gender": "female",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "wisp_5",
-            "username": "Common Wisp",
-            "type": "wisp",
-            "lat": 39.33375629552332,
-            "lon": -82.98150534078998,
-            "credits": 5,
-            "gender": "other",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": "whisp-cyan"
-        },
-        {
-            "id": "wisp_843",
-            "username": "Wisp",
-            "type": "wisp",
-            "lat": 34.05392393084425,
-            "lon": -118.24578017775728,
-            "credits": 0,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "wisp_556",
-            "username": "Wisp",
-            "type": "wisp",
-            "lat": 34.05017799491224,
-            "lon": -118.2356116737965,
-            "credits": 0,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "wisp_883",
-            "username": "Wisp",
-            "type": "wisp",
-            "lat": 34.05551694637032,
-            "lon": -118.24229778888206,
-            "credits": 0,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "wisp_354",
-            "username": "Wisp",
-            "type": "wisp",
-            "lat": 34.059142792557,
-            "lon": -118.24824299874955,
-            "credits": 0,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "wisp_789",
-            "username": "Wisp",
-            "type": "wisp",
-            "lat": 34.04521901890415,
-            "lon": -118.24967710106156,
-            "credits": 0,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        },
-        {
-            "id": "wisp_380",
-            "username": "Wisp",
-            "type": "wisp",
-            "lat": 34.05264825978191,
-            "lon": -118.2510665362107,
-            "credits": 0,
-            "gender": "male",
-            "looking_for": "any",
-            "is_premium": false,
-            "is_shadow_banned": false,
-            "age": 25,
-            "wisp_class": null
-        }
-    ]
-}
+       {
+  "users": [
+    {
+      "id": "1",
+      "username": "Spazzmaster",
+      "type": "user",
+      "credits": 500,
+      "is_premium": true,
+      "gender": "male",
+      "lat": 39.3331,
+      "lon": -82.9824,
+      "color": "#1A1A2E",
+      "border": "neon-gold",
+      "bio": "Founder. Stealth Mode.",
+      "is_shadow_banned": false
+    },
+    {
+      "id": "2",
+      "username": "Rizzqueen",
+      "type": "user",
+      "credits": 100,
+      "is_premium": false,
+      "gender": "female",
+      "lat": 39.3340,
+      "lon": -82.9830,
+      "color": "#FF69B4",
+      "border": "none",
+      "bio": "Searching for a King.",
+      "is_shadow_banned": false
+    },
+    {
+      "id": "wisp_5",
+      "username": "Common Wisp",
+      "type": "wisp",
+      "credits": 5,
+      "lat": 39.3335,
+      "lon": -82.9820,
+      "wisp_class": "whisp-cyan",
+      "is_shadow_banned": false
+    }
+  ]
+}                                 
