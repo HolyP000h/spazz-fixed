@@ -9,6 +9,10 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 app = FastAPI()
+from fastapi.staticfiles import StaticFiles
+
+# This tells FastAPI to serve everything in the 'static' folder
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Enable CORS so the HTML file can talk to the backend
 app.add_middleware(
