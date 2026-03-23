@@ -6,14 +6,14 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # <--- NEW: Missing Import
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 
 app = FastAPI()
 
-# 1. MOUNT STATIC FILES (The fix for your 404s!)
-# This MUST happen after app = FastAPI()
+# 1. MOUNT STATIC FILES
+# This fixes the 404 errors for style.css and radar.js
 if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -45,7 +45,7 @@ class User(BaseModel):
 DB_FILE = 'users_db.json'
 
 def save_to_db(users_list: List[User]):
-    # Use model_dump() to keep JSON clean and prevent doubling lines
+    # .model_dump() is the modern way to turn Pydantic objects into clean JSON
     data = {"users": [u.model_dump() for u in users_list]}
     with open(DB_FILE, 'w') as f:
         json.dump(data, f, indent=4)
@@ -56,11 +56,13 @@ def load_from_db() -> List[User]:
             return []
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            return [User(**u) for u in data.get("users", [])]
-    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            # Safely grab the users list or return empty if missing
+            user_data = data.get("users", [])
+            return [User(**u) for u in user_data]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError):
         return []
 
-# --- 4. THE HEARTBEAT (Fixed to stop doubling lines) ---
+# --- 4. THE HEARTBEAT ---
 async def ghost_heartbeat():
     print("💓 Ghost Heartbeat pumping on the Legion i9...")
     while True:
@@ -69,7 +71,6 @@ async def ghost_heartbeat():
         # Keep a healthy amount of wisps (Max 15)
         if len(all_entities) < 15:
             new_id = f"wisp_{random.randint(100, 999)}"
-            # Random Ohio-ish coordinates for new wisps
             new_wisp = User(
                 id=new_id,
                 username="Common Wisp",
@@ -80,9 +81,8 @@ async def ghost_heartbeat():
             )
             all_entities.append(new_wisp)
 
-        # Move everyone slightly (Pulse effect)
+        # Move everyone slightly (The Radar Pulse)
         for entity in all_entities:
-            # We update the existing .lat and .lon instead of adding new ones
             entity.lat += random.uniform(-0.0001, 0.0001)
             entity.lon += random.uniform(-0.0001, 0.0001)
 
@@ -98,7 +98,6 @@ async def startup_event():
 @app.get("/api/users")
 def get_users():
     all_users = load_from_db()
-    # Filter out shadow banned bots
     return [u for u in all_users if not u.is_shadow_banned]
 
 @app.get("/", response_class=HTMLResponse)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
     "users": [
         {
@@ -212,3 +213,9 @@
         }
     ]
 }
+=======
+[
+  {"id":"1","username":"Spazzmaster","type":"user","lat":39.3331,"lon":-82.9824,"credits":500,"gender":"male","looking_for":"any","is_premium":true,"is_shadow_banned":false,"age":25,"wisp_class":null},
+  {"id":"2","username":"Rizzqueen","type":"user","lat":39.3338,"lon":-82.9843,"credits":100,"gender":"female","looking_for":"any","is_premium":false,"is_shadow_banned":false,"age":25,"wisp_class":null}
+]
+>>>>>>> f1b4219ace39b3ec0fa9ef341626fda48af6cdd3

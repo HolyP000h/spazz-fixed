@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* 1. Make the body transparent so the map is visible */
 body {
     margin: 0;
@@ -21,3 +22,47 @@ body {
     background: rgba(0, 0, 0, 0.7); /* Semi-transparent black */
     backdrop-filter: blur(10px); /* Makes the map look blurry behind the UI */
 }
+=======
+/* 1. The Global Radar Look */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: transparent !important;
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#map {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1; 
+    background: #000; /* Fallback if map fails */
+}
+
+/* 2. The Red Whisp Glow (The "Haunted" Effect) */
+.whisp-red {
+    color: #ff0000;
+    font-weight: bold;
+    text-shadow: 0 0 8px #ff0000, 0 0 15px #ff4d4d;
+    animation: flicker 0.8s ease-in-out infinite;
+    stroke: #ff0000;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 5px #ff0000);
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 1; filter: brightness(1); }
+    50% { opacity: 0.8; filter: brightness(1.5); }
+}
+
+/* 3. UI Panels (Glassmorphism) */
+.pulse-container, .discovery-card {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+}
+>>>>>>> f1b4219ace39b3ec0fa9ef341626fda48af6cdd3
