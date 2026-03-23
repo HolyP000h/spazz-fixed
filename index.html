@@ -4,10 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPAZZ | Stealth</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        /* This makes the map fill the background behind your UI */
+        #map { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 0; 
+            background: #000; 
+        }
+
+        /* Ensuring your existing UI elements stay on top of the map */
+        .pulse-container, .status-label, #discovery-card {
+            position: relative;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
 <body>
+
+    <div id="map"></div>
 
     <div class="pulse-container">
         <div class="inner-ring"></div>
@@ -39,7 +72,7 @@
             <button id="lock-btn" style="background: rgba(255,255,255,0.1); border: 1px solid #fff; color: white; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; width: 45%;">
                 🔒 LOCK ON
             </button>
-            <button id="meet-btn" style="background: var(--spazz-purple); border: none; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.8rem; width: 45%;">
+            <button id="meet-btn" style="background: #8a2be2; border: none; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.8rem; width: 45%;">
                 🤝 MEET
             </button>
         </div>
