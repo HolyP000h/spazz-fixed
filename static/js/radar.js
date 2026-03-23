@@ -12,7 +12,7 @@ async function updateRadar() {
         const response = await fetch('/api/users');
         const data = await response.json();
         
-        // Clear old markers if any
+        // Clear old markers
         map.eachLayer((layer) => {
             if (layer instanceof L.CircleMarker) {
                 map.removeLayer(layer);
@@ -22,25 +22,37 @@ async function updateRadar() {
         const markers = [];
 
         data.forEach(user => {
-            // Purple for real users, Cyan for Wisps
-            const color = user.type === 'user' ? '#8a2be2' : '#00ffff';
-            
-            const marker = L.circleMarker([user.lat, user.lon], {
+            let markerOptions = {
                 radius: user.type === 'user' ? 10 : 6,
-                fillColor: color,
                 color: '#fff',
                 weight: 2,
                 opacity: 1,
                 fillOpacity: 0.8
-            }).addTo(map).bindPopup(`<b>${user.username}</b><br>${user.type}`);
-            
-            markers.push([user.lat, user.lon]);
-        });
+            };
 
-        // Automatically zoom to fit everyone found
+            // Apply Red Whisp flicker class and color
+            if (user.wisp_class === 'whisp-red') {
+                markerOptions.fillColor = '#ff0000';
+                markerOptions.className = 'whisp-red'; // Triggers your flicker CSS
+            } else if (user.type === 'wisp') {
+                markerOptions.fillColor = '#00ffff'; 
+            } else {
+                markerOptions.fillColor = '#8a2be2'; 
+            }
+
+            // Create and add the marker
+            L.circleMarker([user.lat, user.lon], markerOptions)
+                .addTo(map)
+                .bindPopup(`<b>${user.username}</b><br>${user.type}`);
+            
+            // Keep track of coordinates for the auto-zoom
+            markers.push([user.lat, user.lon]);
+        }); // <-- Fixed the bracket position here
+
+        // Automatically zoom to fit everyone (Ohio and LA)
         if (markers.length > 0) {
             const bounds = L.latLngBounds(markers);
-            map.fitBounds(bounds, { padding: [50, 50] });
+            map.fitBounds(bounds, { padding: [100, 100], animate: true });
         }
 
     } catch (err) {
@@ -48,7 +60,5 @@ async function updateRadar() {
     }
 }
 
-// Initial pull
 updateRadar();
-// Refresh every 5 seconds to catch the "Heartbeat" moves
 setInterval(updateRadar, 5000);
