@@ -1,42 +1,4 @@
-       {
-  "users": [
-    {
-      "id": "1",
-      "username": "Spazzmaster",
-      "type": "user",
-      "credits": 500,
-      "is_premium": true,
-      "gender": "male",
-      "lat": 39.3331,
-      "lon": -82.9824,
-      "color": "#1A1A2E",
-      "border": "neon-gold",
-      "bio": "Founder. Stealth Mode.",
-      "is_shadow_banned": false
-    },
-    {
-      "id": "2",
-      "username": "Rizzqueen",
-      "type": "user",
-      "credits": 100,
-      "is_premium": false,
-      "gender": "female",
-      "lat": 39.3340,
-      "lon": -82.9830,
-      "color": "#FF69B4",
-      "border": "none",
-      "bio": "Searching for a King.",
-      "is_shadow_banned": false
-    },
-    {
-      "id": "wisp_5",
-      "username": "Common Wisp",
-      "type": "wisp",
-      "credits": 5,
-      "lat": 39.3335,
-      "lon": -82.9820,
-      "wisp_class": "whisp-cyan",
-      "is_shadow_banned": false
-    }
-  ]
-}                                 
+[
+  {"id":"1","username":"Spazzmaster","type":"user","lat":39.3331,"lon":-82.9824,"credits":500,"gender":"male","looking_for":"any","is_premium":true,"is_shadow_banned":false,"age":25,"wisp_class":null},
+  {"id":"2","username":"Rizzqueen","type":"user","lat":39.3338,"lon":-82.9843,"credits":100,"gender":"female","looking_for":"any","is_premium":false,"is_shadow_banned":false,"age":25,"wisp_class":null}
+]
