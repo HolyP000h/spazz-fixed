@@ -22,6 +22,11 @@ async function updateRadar() {
         data.forEach(user => {
             const color = user.wisp_class === 'whisp-red' ? '#ff0000' : 
                           (user.type === 'wisp' ? '#00ffff' : '#8a2be2');
+const allCoords = data.map(u => [u.lat, u.lon]);
+if (allCoords.length > 0) {
+    const bounds = L.latLngBounds(allCoords);
+    map.fitBounds(bounds, { padding: [50, 50], animate: true });
+}                 
 
             // If marker exists, update position
             if (markers[user.id]) {
