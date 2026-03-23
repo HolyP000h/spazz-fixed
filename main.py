@@ -12,10 +12,13 @@ from typing import List, Optional
 
 app = FastAPI()
 
+# 1. MOUNT STATIC FILES
+# This fixes the 404 errors for style.css and radar.js
 if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- 2. DATA MODEL ---
 class User(BaseModel):
     id: str
     username: str
@@ -37,6 +41,7 @@ class User(BaseModel):
     age: int = 25
     wisp_class: Optional[str] = None
 
+# --- 3. DATABASE TOOLS ---
 DB_FILE = 'users_db.json'
 
 def save_to_db(users_list: List[User]):
@@ -57,11 +62,13 @@ def load_from_db() -> List[User]:
     except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError):
         return []
 
+# --- 4. THE HEARTBEAT ---
 async def ghost_heartbeat():
     print("💓 Ghost Heartbeat pumping on the Legion i9...")
     while True:
         all_entities = load_from_db()
         
+        # Keep a healthy amount of wisps (Max 15)
         if len(all_entities) < 15:
             new_id = f"wisp_{random.randint(100, 999)}"
             new_wisp = User(
@@ -70,10 +77,14 @@ async def ghost_heartbeat():
                 type="wisp",
                 lat=39.333 + random.uniform(-0.01, 0.01),
                 lon=-82.982 + random.uniform(-0.01, 0.01),
-                wisp_class="whisp-cyan"
+                wisp_class="whisp-cyan",
+                credits=0,  # Add these defaults
+                gender="other",
+                age=0
             )
             all_entities.append(new_wisp)
 
+        # Move everyone slightly (The Radar Pulse)
         for entity in all_entities:
             entity.lat += random.uniform(-0.0001, 0.0001)
             entity.lon += random.uniform(-0.0001, 0.0001)
@@ -81,6 +92,7 @@ async def ghost_heartbeat():
         save_to_db(all_entities)
         await asyncio.sleep(5)
 
+# --- 5. STARTUP & ENDPOINTS ---
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(ghost_heartbeat())
@@ -101,4 +113,4 @@ async def read_index():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8888) # Try port 8888
