@@ -130,6 +130,8 @@ setTimeout(() => flash.remove(), 500);
     setTimeout(() => { document.getElementById('map').style.filter = "none"; }, 2000);
 }
 
+document.getElementById('discovery-card').style.display = 'block';
+
 // Kick it off
 startTracking();
 setInterval(updateRadar, 3000);
