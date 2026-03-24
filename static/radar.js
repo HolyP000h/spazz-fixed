@@ -122,21 +122,25 @@ updateRadar();
 setInterval(updateRadar, 3000);
 
 // 📍 This connects YOUR real steps to the Radar
-function startTracking() {
-    if (!navigator.geolocation) return;
+let currentLat, currentLon; // Global variables for the Haversine formula
 
+function startTracking() {
     navigator.geolocation.watchPosition(
         (position) => {
-            const { latitude, longitude } = position.coords;
-            // Move the map to where YOU actually are
-            map.setView([latitude, longitude], 18); // Zoom in closer (18) to see street detail
+            currentLat = position.coords.latitude;
+            currentLon = position.coords.longitude;
+
+            // 🏎️ PAN instead of SET for smooth movement
+            map.panTo([currentLat, currentLon], {
+                animate: true,
+                duration: 1.5 // Creates a 1.5 second "glide"
+            });
+            
+            // 🔍 Zoom in deep to make street-walking feel accurate
+            if (map.getZoom() < 18) map.setZoom(18); 
         },
-        (err) => console.error("GPS Error:", err),
-        {
-            enableHighAccuracy: true, // 🎯 This is the "Legion" level precision
-            maximumAge: 0,
-            timeout: 5000
-        }
+        (err) => console.error(err),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
     );
 }
 
