@@ -1,4 +1,5 @@
 // 1. Initialize the map
+let firstLoad = true;
 var map = L.map('map', { zoomControl: false }).setView([39.3331, -82.9824], 14);
 
 // 2. Add Dark Matter tiles
@@ -19,31 +20,27 @@ async function updateRadar() {
         const currentIds = new Set(data.map(u => u.id));
         const allCoords = [];
 
+        // 1. Update or Create Markers
         data.forEach(user => {
-            // Determine DNA color
             const color = user.wisp_class === 'whisp-red' ? '#ff0000' : 
                           (user.type === 'user' ? '#8a2be2' : '#00ffff');
 
-            // If marker exists, update position smoothly
             if (markers[user.id]) {
                 markers[user.id].setLatLng([user.lat, user.lon]);
             } else {
-                // Create new neon marker
                 markers[user.id] = L.circleMarker([user.lat, user.lon], {
                     radius: user.type === 'user' ? 10 : 7,
                     fillColor: color,
                     color: '#fff',
                     weight: 2,
-                    opacity: 1,
                     fillOpacity: 0.8,
                     className: user.wisp_class || '' 
-                }).addTo(map).bindPopup(`<b>${user.username}</b><br>${user.type}`);
+                }).addTo(map).bindPopup(`<b>${user.username}</b>`);
             }
-            // Add to the list for auto-zoom calculation
             allCoords.push([user.lat, user.lon]);
         });
 
-        // 🧹 Cleanup: Remove markers for disconnected signals
+        // 2. Cleanup Disconnected Signals
         Object.keys(markers).forEach(id => {
             if (!currentIds.has(id)) {
                 map.removeLayer(markers[id]);
@@ -51,21 +48,17 @@ async function updateRadar() {
             }
         });
 
-        // 📈 UI Update
+        // 3. UI and Auto-Zoom
         const statusEl = document.getElementById('status');
         if (statusEl) statusEl.innerText = `SIGNALS: ${data.length} LOCKED`;
 
-        // 🎯 Auto-zoom (Triggers ONLY if we have markers and they move out of view)
-        if (allCoords.length > 0) {
-            const bounds = L.latLngBounds(allCoords);
-            map.fitBounds(bounds, { padding: [100, 100], animate: true, maxZoom: 15 });
+        if (typeof window.firstLoad === 'undefined') window.firstLoad = true; 
+        if (window.firstLoad && allCoords.length > 0) {
+            map.fitBounds(L.latLngBounds(allCoords), { padding: [100, 100] });
+            window.firstLoad = false; 
         }
 
     } catch (err) {
         console.error("⚠️ Radar Sync Error:", err);
     }
 }
-
-// Kickstart the engine
-updateRadar();
-setInterval(updateRadar, 3000);
