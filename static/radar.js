@@ -95,24 +95,28 @@ if (statusEl) statusEl.innerText = "SIGNAL HARVESTED";
     } catch (err) { console.error("Radar Sync Error:", err); }
 }
 
-// --- 💰 HARVEST API CALL ---
-async function harvestTarget(id) {
-    try {
-        const res = await fetch(`/api/collect/${id}`, { method: 'POST' });
-        const data = await res.json();
-        if (data.status === 'success') {
-            playSound('collect');
-            document.getElementById('coin-count').innerText = data.new_balance;
-            lockedTargetId = null;
-            
-            // ⚡ Lightning Flash Effect
-            const flash = document.createElement('div');
-            flash.className = 'lightning-flash';
-            document.body.appendChild(flash);
-            setTimeout(() => flash.remove(), 400);
-        }
-    } catch (err) { console.error("Harvest failed:", err); }
-}
+// 🎯 HUNT & HARVEST LOGIC
+            if (lockedTargetId === user.id && myLat) {
+                // 1. CALCULATE THE DISTANCE FIRST
+                const dist = getDistance(myLat, myLon, user.lat, user.lon);
+                
+                // 2. UPDATE THE STATUS TEXT
+                const statusEl = document.getElementById('status');
+                if (statusEl) statusEl.innerText = `TARGET: ${Math.round(dist)}m`;
+                
+                // 3. UPDATE THE PINK PROXIMITY BAR
+                const fill = document.getElementById('proximity-fill');
+                if (fill) {
+                    // Fill bar based on 100m range
+                    let proximityPercent = Math.max(0, Math.min(100, (100 - dist))); 
+                    fill.style.height = proximityPercent + "%";
+                }
+                
+                // 4. TRIGGER HARVEST AT 15 METERS
+                if (dist < 15) {
+                    harvestTarget(user.id);
+                }
+            }
 
 // --- 📏 MATH & GPS ---
 function getDistance(lat1, lon1, lat2, lon2) {
