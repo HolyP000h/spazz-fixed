@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1",
+    "username": "Red Phantom",
+    "lat": 39.3331,
+    "lon": -82.9824,
+    "type": "wisp",
+    "wisp_class": "whisp-red"
+  },
+  {
+    "id": "2",
+    "username": "Neon Ghost",
+    "lat": 39.3340,
+    "lon": -82.9810,
+    "type": "wisp",
+    "wisp_class": "whisp-cyan"
+  }
+]
