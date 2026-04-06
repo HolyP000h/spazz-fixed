@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SPAZZ | Stealth Radar</title>
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📡</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
 
     <style>
@@ -15,7 +14,7 @@
         body, html {
             margin: 0; padding: 0;
             background: #000; overflow: hidden;
-            font-family: 'Inter', 'Courier New', monospace;
+            font-family: 'Inter', sans-serif;
         }
 
         /* 2. The Map Container */
@@ -23,13 +22,12 @@
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0; background: #050505;
-            transition: filter 0.2s ease, opacity 0.5s ease;
         }
 
         /* 3. The Cyber HUD (Top Left) */
         #status {
             position: fixed; top: 20px; left: 20px;
-            z-index: 1000; padding: 15px 25px;
+            z-index: 1000; padding: 12px 20px;
             background: rgba(0, 0, 0, 0.85);
             border: 1px solid #ff00ff;
             color: #00ffff;
@@ -38,12 +36,13 @@
             text-transform: uppercase;
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
             pointer-events: none;
+            font-size: 0.8rem;
         }
 
         /* 4. The Proximity Meter (Right) */
         #proximity-bar {
             position: fixed; right: 20px; bottom: 50px;
-            width: 15px; height: 200px;
+            width: 12px; height: 200px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid #00ffff;
             z-index: 1000;
@@ -67,10 +66,20 @@
             transition: opacity 1s ease;
         }
 
-        .poster-logo { max-width: 80%; max-height: 70vh; margin-bottom: 20px; }
-        .glitch-text { color: #00ffff; letter-spacing: 5px; font-size: 0.8rem; }
+        .poster-logo { max-width: 70%; max-height: 60vh; margin-bottom: 20px; }
+        .glitch-text { color: #00ffff; letter-spacing: 5px; font-size: 0.7rem; text-align: center; }
 
-        /* 6. Discovery Card */
+        /* 6. Purse Display (Gold) */
+        #purse-display {
+            position:fixed; top:20px; right:20px; 
+            z-index:1000; font-family:monospace; 
+            color:#ffd700; background:rgba(0,0,0,0.8); 
+            padding:10px; border:1px solid #ffd700; 
+            box-shadow: 0 0 10px #ffd700;
+            font-size: 0.9rem;
+        }
+
+        /* 7. Discovery Card */
         #discovery-card {
             position: fixed; bottom: 30px; left: 50%;
             transform: translateX(-50%);
@@ -80,42 +89,61 @@
             padding: 20px; border-radius: 15px;
             color: white; text-align: center;
             z-index: 1000; backdrop-filter: blur(10px);
-            display: none; /* Hidden until a wisp is clicked */
+            display: none; 
         }
 
-        .user-tag { background: #8a2be2; padding: 3px 8px; border-radius: 5px; font-size: 0.7rem; margin: 0 5px; }
+        #lock-btn {
+            background: #ff00ff; border: none; 
+            color: white; padding: 12px; 
+            border-radius: 25px; width: 100%; 
+            cursor: pointer; font-weight: bold;
+            text-transform: uppercase; margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
 <div id="boot-screen">
-    <img src="static/poster.png" class="poster-logo">
-    <p class="glitch-text">INITIALIZING STEALTH RADAR...</p>
+    <img src="static/poster.png" class="poster-logo" onerror="this.style.display='none'">
+    <p class="glitch-text">INITIALIZING STEALTH RADAR...<br>CONNECTING TO SPAZZ NETWORK</p>
 </div>
 
 <div id="status">SCANNING FOR SIGNALS...</div>
-<div id="proximity-bar"><div id="proximity-fill"></div></div>
 
-<div id="purse-display" style="position:fixed; top:20px; right:20px; z-index:10000; font-family:monospace; color:#ffd700; background:rgba(0,0,0,0.7); padding:10px; border:1px solid #ffd700; box-shadow: 0 0 10px #ffd700;">
+<div id="purse-display">
     CREDITS: <span id="coin-count">0</span>
+</div>
+
+<div id="proximity-bar">
+    <div id="proximity-fill"></div>
 </div>
 
 <div id="map"></div>
 
 <div id="discovery-card">
     <div id="blind-content">
-        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center;">👤</div>
-        <h2 style="font-size: 1rem; color: #aaa;">ENTITY DETECTED</h2>
-        <p style="font-size: 0.7rem; opacity: 0.6;">Lock on to track distance.</p>
+        <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 50%; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🎯</div>
+        <h2 style="font-size: 1rem; margin: 0;">ENTITY DETECTED</h2>
+        <p style="font-size: 0.7rem; opacity: 0.6; margin: 5px 0;">Signal strength verified. Proceed to intercept.</p>
     </div>
-    
-    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-        <button id="lock-btn" style="background: none; border: 1px solid #fff; color: white; padding: 10px; border-radius: 20px; width: 100%; cursor: pointer;">🔒 LOCK SIGNAL</button>
-    </div>
+    <button id="lock-btn" onclick="this.parentElement.style.display='none';">DISMISS SIGNAL</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="static/radar.js"></script>
+
+<script>
+    // Handle Boot Screen Fade-out
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const boot = document.getElementById('boot-screen');
+            if (boot) {
+                boot.style.opacity = '0';
+                setTimeout(() => boot.remove(), 1000);
+            }
+        }, 2500);
+    });
+</script>
 
 </body>
 </html>
