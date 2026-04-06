@@ -98,8 +98,8 @@ def get_users():
     
     return {
         "entities": [u for u in all_entities if not u.is_shadow_banned],
-        "coach": "COACH: Scanning for Phantoms..."
-    }
+        "coach": "COACH: Be vewy vewy quiet... we hunting wisps." if random.random() > 0.5 else "COACH: Target detected. Stay frosty."
+    }    
 
 @app.post("/api/collect/{wisp_id}")
 async def collect_wisp(wisp_id: str):
