@@ -78,13 +78,20 @@ def get_users():
     if len(all_entities) < 10:
         for i in range(30):
             new_id = f"gen_{random.randint(1000, 9999)}"
+            # Randomly decide if this is a Wisp or a Potential Match
+            is_match = random.random() > 0.7  # 30% chance it's a real person
+            
             all_entities.append(User(
-                id=new_id, username="Wisp", type="wisp",
-                lat=39.333 + random.uniform(-0.005, 0.005),
-                lon=-82.982 + random.uniform(-0.005, 0.005),
-                wisp_class="whisp-cyan"
+                id=new_id, 
+                username="Potential Spazz" if is_match else "Wisp", 
+                type="user" if is_match else "wisp", # 'user' type triggers the radar lock
+                lat=39.333 + random.uniform(-0.015, 0.015), # Wider 30-mile scatter
+                lon=-82.982 + random.uniform(-0.015, 0.015),
+                gender="female" if is_match else "other",
+                age=random.randint(19, 45) if is_match else 25,
+                wisp_class="whisp-purple" if is_match else "whisp-cyan"
             ))
-
+            
     # Move ghosts every time the radar is checked
     all_entities = move_wisps(all_entities)
     save_to_db(all_entities)
