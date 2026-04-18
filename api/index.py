@@ -42,9 +42,11 @@ COACH_TIPS_GENERAL = [
 ]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_FILE   = os.path.join(BASE_DIR, 'users_db.json')
-AUTH_FILE = os.path.join(BASE_DIR, 'auth_db.json')
-CHAT_FILE = os.path.join(BASE_DIR, 'chat_db.json')
+# Vercel serverless: filesystem is read-only except /tmp
+_DATA_DIR = '/tmp' if os.path.exists('/tmp') and not os.access(BASE_DIR, os.W_OK) else BASE_DIR
+DB_FILE   = os.path.join(_DATA_DIR, 'users_db.json')
+AUTH_FILE = os.path.join(_DATA_DIR, 'auth_db.json')
+CHAT_FILE = os.path.join(_DATA_DIR, 'chat_db.json')
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -413,8 +415,8 @@ PREMIUM_COACH_TIPS = {
     ]
 }
 
-HOTSPOTS_FILE = os.path.join(BASE_DIR, 'hotspots_db.json')
-INVENTORY_FILE = os.path.join(BASE_DIR, 'inventory_db.json')
+HOTSPOTS_FILE = os.path.join(_DATA_DIR, 'hotspots_db.json')
+INVENTORY_FILE = os.path.join(_DATA_DIR, 'inventory_db.json')
 
 def load_hotspots():
     if not os.path.exists(HOTSPOTS_FILE): return []
