@@ -254,17 +254,38 @@ async def get_users(auth: AuthRecord = Depends(get_current_user)):
             gender="male", seeking="female", online=True
         ))
 
-    # Spawn wisps if needed
+    # Spawn wisps near online users (not hardcoded location)
+    online_users = [u for u in all_entities if u.type in ("user", "admin") and u.online]
     wisps = [u for u in all_entities if u.type == "wisp"]
-    if len(wisps) < 10:
-        for _ in range(15):
-            all_entities.append(User(
-                id=f"wisp_{uuid.uuid4().hex[:6]}",
-                username="Wisp", type="wisp",
-                lat=39.333 + random.uniform(-0.02, 0.02),
-                lon=-82.982 + random.uniform(-0.02, 0.02),
-                wisp_class="whisp-cyan"
-            ))
+
+    # Remove wisps that are far from ALL online users (cleanup stale wisps)
+    def near_any_user(wisp, users, threshold=0.05):
+        for u in users:
+            if abs(wisp.lat - u.lat) < threshold and abs(wisp.lon - u.lon) < threshold:
+                return True
+        return False
+
+    if online_users:
+        all_entities = [e for e in all_entities if e.type != "wisp" or near_any_user(e, online_users)]
+        wisps = [u for u in all_entities if u.type == "wisp"]
+
+    # Spawn ~5 wisps per online user if below threshold
+    target_wisps = max(10, len(online_users) * 5)
+    if len(wisps) < target_wisps:
+        spawn_pool = online_users if online_users else []
+        if not spawn_pool:
+            # Fallback: no online users, skip spawning
+            pass
+        else:
+            for _ in range(target_wisps - len(wisps)):
+                anchor = random.choice(spawn_pool)
+                all_entities.append(User(
+                    id=f"wisp_{uuid.uuid4().hex[:6]}",
+                    username="Wisp", type="wisp",
+                    lat=anchor.lat + random.uniform(-0.02, 0.02),
+                    lon=anchor.lon + random.uniform(-0.02, 0.02),
+                    wisp_class="whisp-cyan"
+                ))
 
     all_entities = move_wisps(all_entities)
     save_to_db(all_entities)
