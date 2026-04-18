@@ -3,60 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SPAZZ | Stealth Radar</title>
-
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📡</text></svg>">
+    <title>SPAZZ</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
-
     <style>
-        /* 1. Global Reset */
+        *, *::before, *::after { box-sizing: border-box; }
         body, html {
             margin: 0; padding: 0;
-            background: #000; overflow: hidden;
+            background: #000;
             font-family: 'Inter', sans-serif;
+            color: #fff;
+            height: 100%;
+            overflow: hidden;
         }
 
-        /* 2. The Map Container */
-        #map {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0; background: #050505;
-        }
+        /* ── SCREENS ── */
+        .screen { display: none; width: 100%; height: 100vh; }
+        .screen.active { display: flex; }
 
-        /* 3. The Cyber HUD (Top Left) */
-        #status {
-            position: fixed; top: 20px; left: 20px;
-            z-index: 1000; padding: 12px 20px;
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid #ff00ff;
+        /* ── AUTH SCREEN ── */
+        #auth-screen {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            padding: 24px;
+        }
+        #auth-screen .logo {
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #ff00ff;
+            text-shadow: 0 0 20px #ff00ff;
+            margin-bottom: 8px;
+        }
+        #auth-screen .tagline {
+            font-size: 0.7rem;
+            letter-spacing: 3px;
             color: #00ffff;
-            font-weight: bold;
+            margin-bottom: 36px;
+            text-transform: uppercase;
+        }
+        .auth-box {
+            width: 100%;
+            max-width: 360px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,0,255,0.3);
+            border-radius: 16px;
+            padding: 28px 24px;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85rem;
             letter-spacing: 2px;
             text-transform: uppercase;
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
-            pointer-events: none;
-            font-size: 0.8rem;
+            cursor: pointer;
+            color: rgba(255,255,255,0.4);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
         }
-
-        /* 4. The Proximity Meter (Right) */
-        #proximity-bar {
-            position: fixed; right: 20px; bottom: 50px;
-            width: 12px; height: 200px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #00ffff;
-            z-index: 1000;
+        .auth-tab.active {
+            color: #ff00ff;
+            border-bottom-color: #ff00ff;
         }
-
-        #proximity-fill {
-            width: 100%; height: 0%; 
+        .auth-form { display: none; flex-direction: column; gap: 14px; }
+        .auth-form.active { display: flex; }
+        .auth-form input, .auth-form select {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .auth-form input:focus, .auth-form select:focus {
+            border-color: #ff00ff;
+        }
+        .auth-form select option { background: #111; }
+        .auth-btn {
             background: #ff00ff;
-            position: absolute; bottom: 0;
-            transition: height 0.3s ease;
-            box-shadow: 0 0 15px #ff00ff;
+            border: none;
+            color: #fff;
+            padding: 14px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: opacity 0.2s;
+        }
+        .auth-btn:hover { opacity: 0.85; }
+        .auth-error {
+            color: #ff4444;
+            font-size: 0.8rem;
+            text-align: center;
+            min-height: 18px;
         }
 
-        /* 5. Boot Screen */
+        /* ── BOOT SCREEN ── */
         #boot-screen {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -65,85 +121,802 @@
             align-items: center; justify-content: center;
             transition: opacity 1s ease;
         }
-
         .poster-logo { max-width: 70%; max-height: 60vh; margin-bottom: 20px; }
         .glitch-text { color: #00ffff; letter-spacing: 5px; font-size: 0.7rem; text-align: center; }
 
-        /* 6. Purse Display (Gold) */
+        /* ── ADMIN RADAR VIEW ── */
+        #admin-screen {
+            flex-direction: column;
+            position: relative;
+        }
+        #map {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0; background: #050505;
+        }
+        #status {
+            position: fixed; top: 20px; left: 20px;
+            z-index: 1000; padding: 12px 20px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid #ff00ff;
+            color: #00ffff;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(255,0,255,0.3);
+            pointer-events: none;
+            font-size: 0.8rem;
+        }
+        #proximity-bar {
+            position: fixed; right: 20px; bottom: 50px;
+            width: 12px; height: 200px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #00ffff;
+            z-index: 1000;
+        }
+        #proximity-fill {
+            width: 100%; height: 0%;
+            background: #ff00ff;
+            position: absolute; bottom: 0;
+            transition: height 0.3s ease;
+            box-shadow: 0 0 15px #ff00ff;
+        }
         #purse-display {
-            position:fixed; top:20px; right:20px; 
-            z-index:1000; font-family:monospace; 
-            color:#ffd700; background:rgba(0,0,0,0.8); 
-            padding:10px; border:1px solid #ffd700; 
+            position: fixed; top: 20px; right: 20px;
+            z-index: 1000; font-family: monospace;
+            color: #ffd700; background: rgba(0,0,0,0.8);
+            padding: 10px; border: 1px solid #ffd700;
             box-shadow: 0 0 10px #ffd700;
             font-size: 0.9rem;
         }
-
-        /* 7. Discovery Card */
         #discovery-card {
             position: fixed; bottom: 30px; left: 50%;
             transform: translateX(-50%);
             width: 85%; max-width: 350px;
-            background: rgba(15, 15, 15, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(15,15,15,0.95);
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 20px; border-radius: 15px;
             color: white; text-align: center;
             z-index: 1000; backdrop-filter: blur(10px);
-            display: none; 
+            display: none;
         }
-
         #lock-btn {
-            background: #ff00ff; border: none; 
-            color: white; padding: 12px; 
-            border-radius: 25px; width: 100%; 
+            background: #ff00ff; border: none;
+            color: white; padding: 12px;
+            border-radius: 25px; width: 100%;
             cursor: pointer; font-weight: bold;
             text-transform: uppercase; margin-top: 10px;
+        }
+
+        /* ── USER CHAT VIEW ── */
+        #user-screen {
+            flex-direction: column;
+            background: #0a0a0a;
+            height: 100vh;
+        }
+
+        /* Top nav */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+        }
+        .top-nav .app-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #ff00ff;
+            text-shadow: 0 0 10px rgba(255,0,255,0.5);
+        }
+        .top-nav .credits-badge {
+            font-size: 0.75rem;
+            color: #ffd700;
+            border: 1px solid #ffd700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        /* Tab bar */
+        .tab-bar {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            color: rgba(255,255,255,0.4);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: #ff00ff;
+            border-bottom-color: #ff00ff;
+        }
+
+        /* Tab content */
+        .tab-content { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+        .tab-content.active { display: flex; }
+
+        /* Coach panel */
+        #coach-panel {
+            padding: 20px;
+        }
+        .coach-bubble {
+            background: rgba(0,255,255,0.06);
+            border: 1px solid rgba(0,255,255,0.2);
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #00ffff;
+            margin-bottom: 16px;
+        }
+        .coach-label {
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            color: rgba(0,255,255,0.5);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .haptic-zone {
+            background: rgba(255,0,255,0.06);
+            border: 1px solid rgba(255,0,255,0.2);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        .haptic-title {
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 12px;
+        }
+        .pulse-dot {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: #ff00ff;
+            margin: 0 auto;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 30px #ff00ff;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+        }
+
+        /* Friends panel */
+        #friends-panel { padding: 20px; }
+        .friends-empty {
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            margin-top: 60px;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        .friend-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+        }
+        .friend-avatar {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: rgba(255,0,255,0.15);
+            border: 2px solid #ff00ff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; flex-shrink: 0;
+        }
+        .friend-name { font-weight: 600; font-size: 0.95rem; }
+        .friend-status { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+
+        /* Chat panel */
+        #chat-panel {
+            flex-direction: column;
+            height: 100%;
+        }
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            flex-shrink: 0;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-empty {
+            color: rgba(255,255,255,0.3);
+            text-align: center;
+            margin: auto;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        .msg-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .msg-bubble.sent {
+            background: #ff00ff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-bubble.received {
+            background: rgba(255,255,255,0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 24px;
+            padding: 12px 18px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .send-btn {
+            background: #ff00ff;
+            border: none;
+            color: #fff;
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Profile panel */
+        #profile-panel { padding: 24px 20px; }
+        .profile-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .profile-avatar-big {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(255,0,255,0.15);
+            border: 3px solid #ff00ff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 14px;
+            box-shadow: 0 0 20px rgba(255,0,255,0.3);
+        }
+        .profile-username {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .profile-credits {
+            font-size: 0.8rem;
+            color: #ffd700;
+            margin-top: 6px;
+        }
+        .logout-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.5);
+            padding: 12px;
+            border-radius: 25px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
+<!-- BOOT SCREEN -->
 <div id="boot-screen">
     <img src="static/poster.png" class="poster-logo" onerror="this.style.display='none'">
-    <p class="glitch-text">INITIALIZING STEALTH RADAR...<br>CONNECTING TO SPAZZ NETWORK</p>
+    <p class="glitch-text">INITIALIZING SPAZZ...<br>CONNECTING TO NETWORK</p>
 </div>
 
-<div id="status">SCANNING FOR SIGNALS...</div>
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen" class="screen">
+    <div class="logo">SPAZZ</div>
+    <div class="tagline">Find your people</div>
+    <div class="auth-box">
+        <div class="auth-tabs">
+            <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+            <div class="auth-tab" onclick="switchAuthTab('register')">Join</div>
+        </div>
 
-<div id="purse-display">
-    CREDITS: <span id="coin-count">0</span>
-</div>
+        <!-- Login -->
+        <form class="auth-form active" id="login-form" onsubmit="doLogin(event)">
+            <input type="text" id="login-username" placeholder="Username" autocomplete="username" required>
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
+            <div class="auth-error" id="login-error"></div>
+            <button type="submit" class="auth-btn">Enter the Grid</button>
+        </form>
 
-<div id="proximity-bar">
-    <div id="proximity-fill"></div>
-</div>
-
-<div id="map"></div>
-
-<div id="discovery-card">
-    <div id="blind-content">
-        <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 50%; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🎯</div>
-        <h2 style="font-size: 1rem; margin: 0;">ENTITY DETECTED</h2>
-        <p style="font-size: 0.7rem; opacity: 0.6; margin: 5px 0;">Signal strength verified. Proceed to intercept.</p>
+        <!-- Register -->
+        <form class="auth-form" id="register-form" onsubmit="doRegister(event)">
+            <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" required>
+            <input type="password" id="reg-password" placeholder="Password" autocomplete="new-password" required>
+            <input type="number" id="reg-age" placeholder="Age" min="18" max="99" required>
+            <select id="reg-gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="non-binary">Non-binary</option>
+                <option value="other">Other</option>
+            </select>
+            <select id="reg-seeking">
+                <option value="everyone">Open to everyone</option>
+                <option value="female">Women</option>
+                <option value="male">Men</option>
+                <option value="non-binary">Non-binary</option>
+            </select>
+            <div class="auth-error" id="register-error"></div>
+            <button type="submit" class="auth-btn">Create Account</button>
+        </form>
     </div>
-    <button id="lock-btn" onclick="this.parentElement.style.display='none';">DISMISS SIGNAL</button>
+</div>
+
+<!-- ── ADMIN RADAR VIEW ── -->
+<div id="admin-screen" class="screen">
+    <div id="status">SCANNING FOR SIGNALS...</div>
+    <div id="purse-display">CREDITS: <span id="coin-count">0</span></div>
+    <div id="proximity-bar"><div id="proximity-fill"></div></div>
+    <div id="map"></div>
+    <div id="discovery-card">
+        <div id="blind-content">
+            <div style="width:50px;height:50px;background:rgba(255,255,255,0.1);border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🎯</div>
+            <h2 style="font-size:1rem;margin:0;">ENTITY DETECTED</h2>
+            <p style="font-size:0.7rem;opacity:0.6;margin:5px 0;">Signal strength verified. Proceed to intercept.</p>
+        </div>
+        <button id="lock-btn" onclick="document.getElementById('discovery-card').style.display='none'">DISMISS SIGNAL</button>
+    </div>
+</div>
+
+<!-- ── USER APP VIEW ── -->
+<div id="user-screen" class="screen">
+    <div class="top-nav">
+        <div class="app-name">SPAZZ</div>
+        <div class="credits-badge">⚡ <span id="user-credits">0</span></div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab active" onclick="switchTab('coach')">Coach</div>
+        <div class="tab" onclick="switchTab('chat')">Chat</div>
+        <div class="tab" onclick="switchTab('friends')">Friends</div>
+        <div class="tab" onclick="switchTab('profile')">Me</div>
+    </div>
+
+    <!-- COACH TAB -->
+    <div class="tab-content active" id="coach-panel">
+        <div class="coach-label">AI Coach says:</div>
+        <div class="coach-bubble" id="coach-tip">Loading wisdom...</div>
+        <div class="haptic-zone">
+            <div class="haptic-title">Signal Pulse</div>
+            <div class="pulse-dot" id="pulse-dot"></div>
+            <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:14px;">Pulse speed = how close a Wisp is.<br>Follow it. Find it. Earn coins.</p>
+        </div>
+    </div>
+
+    <!-- CHAT TAB -->
+    <div class="tab-content" id="chat-panel">
+        <div class="chat-header" id="chat-header">Select a friend to chat</div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-empty">No messages yet.<br>Find people out there,<br>add them as friends, start chatting.</div>
+        </div>
+        <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" placeholder="Say something..." />
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <!-- FRIENDS TAB -->
+    <div class="tab-content" id="friends-panel">
+        <div id="friends-list">
+            <div class="friends-empty">No friends yet.<br><br>Get out there — follow the pulse,<br>find Wisps, meet people.</div>
+        </div>
+    </div>
+
+    <!-- PROFILE TAB -->
+    <div class="tab-content" id="profile-panel">
+        <div class="profile-header">
+            <div class="profile-avatar-big">👤</div>
+            <div class="profile-username" id="profile-username">—</div>
+            <div class="profile-credits">⚡ <span id="profile-credits-val">0</span> credits</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Log Out</button>
+    </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="static/radar.js"></script>
-
 <script>
-    // Handle Boot Screen Fade-out
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const boot = document.getElementById('boot-screen');
-            if (boot) {
-                boot.style.opacity = '0';
-                setTimeout(() => boot.remove(), 1000);
-            }
-        }, 2500);
-    });
-</script>
 
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let SESSION = null; // { token, user_id, username, is_admin }
+let myLat = 39.333, myLon = -82.982;
+let markers = {};
+let lockedTargetId = null;
+let isAlerting = false;
+let mapInitialized = false;
+let activeChatPartner = null;
+
+const sfx = {
+    lock:      new Audio('/static/audio/lock on.mp3'),
+    wisp_ping: new Audio('/static/audio/wisp_found.mp3'),
+    collect:   new Audio('/static/audio/collect.mp3'),
+    ping:      new Audio('/static/audio/ping.mp3')
+};
+function playSound(name) {
+    if (sfx[name]) { sfx[name].currentTime = 0; sfx[name].play().catch(() => {}); }
+}
+
+// ─────────────────────────────────────────
+// AUTH HELPERS
+// ─────────────────────────────────────────
+function switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('login-form').classList.toggle('active', tab === 'login');
+    document.getElementById('register-form').classList.toggle('active', tab === 'register');
+}
+
+async function doLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        if (!res.ok) { errEl.textContent = 'Wrong username or password.'; return; }
+        const data = await res.json();
+        startSession(data);
+    } catch(err) { errEl.textContent = 'Connection error. Try again.'; }
+}
+
+async function doRegister(e) {
+    e.preventDefault();
+    const username = document.getElementById('reg-username').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const age = parseInt(document.getElementById('reg-age').value);
+    const gender = document.getElementById('reg-gender').value;
+    const seeking = document.getElementById('reg-seeking').value;
+    const errEl = document.getElementById('register-error');
+    errEl.textContent = '';
+    try {
+        const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, age, gender, seeking })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.detail || 'Registration failed.'; return; }
+        startSession(data);
+    } catch(err) { errEl.textContent = 'Connection error. Try again.'; }
+}
+
+function startSession(data) {
+    SESSION = data;
+    localStorage.setItem('spazz_session', JSON.stringify(data));
+    showApp();
+}
+
+function logout() {
+    SESSION = null;
+    localStorage.removeItem('spazz_session');
+    showScreen('auth-screen');
+}
+
+// ─────────────────────────────────────────
+// SCREEN ROUTING
+// ─────────────────────────────────────────
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function showApp() {
+    if (SESSION.is_admin) {
+        showScreen('admin-screen');
+        if (!mapInitialized) initMap();
+        startRadarLoop();
+    } else {
+        showScreen('user-screen');
+        document.getElementById('profile-username').textContent = SESSION.username;
+        startLocationWatch();
+        startUserLoop();
+    }
+}
+
+// ─────────────────────────────────────────
+// TAB SWITCHING (user view)
+// ─────────────────────────────────────────
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => {
+        if (t.textContent.toLowerCase().includes(name.toLowerCase())) t.classList.add('active');
+    });
+    const panel = document.getElementById(name + '-panel');
+    if (panel) panel.classList.add('active');
+    if (name === 'chat') loadInbox();
+}
+
+// ─────────────────────────────────────────
+// LOCATION
+// ─────────────────────────────────────────
+function startLocationWatch() {
+    navigator.geolocation.watchPosition(pos => {
+        myLat = pos.coords.latitude;
+        myLon = pos.coords.longitude;
+        fetch('/api/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION.token },
+            body: JSON.stringify({ lat: myLat, lon: myLon })
+        }).catch(() => {});
+    }, null, { enableHighAccuracy: true });
+}
+
+// ─────────────────────────────────────────
+// USER LOOP (chat view)
+// ─────────────────────────────────────────
+async function startUserLoop() {
+    await fetchUserData();
+    setInterval(fetchUserData, 5000);
+}
+
+async function fetchUserData() {
+    try {
+        const res = await fetch('/api/users', {
+            headers: { 'Authorization': 'Bearer ' + SESSION.token }
+        });
+        const json = await res.json();
+        const me = (json.entities || []).find(u => u.id === SESSION.user_id);
+        if (me) {
+            document.getElementById('user-credits').textContent = me.credits || 0;
+            document.getElementById('profile-credits-val').textContent = me.credits || 0;
+        }
+        if (json.coach) document.getElementById('coach-tip').textContent = json.coach;
+
+        // Pulse speed based on nearest wisp
+        const wisps = (json.entities || []).filter(u => u.type === 'wisp' && u.lat);
+        if (wisps.length) {
+            const nearest = wisps.reduce((best, w) => {
+                const d = getDistance(myLat, myLon, w.lat, w.lon);
+                return d < best.dist ? { dist: d, wisp: w } : best;
+            }, { dist: Infinity, wisp: null });
+            updatePulse(nearest.dist);
+        }
+    } catch(e) {}
+}
+
+function updatePulse(distMeters) {
+    const dot = document.getElementById('pulse-dot');
+    if (!dot) return;
+    // Faster pulse = closer. 300m+ = slow (3s), 0m = very fast (0.3s)
+    const speed = Math.max(0.3, Math.min(3, distMeters / 100));
+    dot.style.animationDuration = speed + 's';
+    // Haptic feedback
+    if (distMeters < 50 && navigator.vibrate) navigator.vibrate(100);
+}
+
+// ─────────────────────────────────────────
+// CHAT
+// ─────────────────────────────────────────
+async function loadInbox() {
+    try {
+        const res = await fetch('/api/chat/inbox', {
+            headers: { 'Authorization': 'Bearer ' + SESSION.token }
+        });
+        const json = await res.json();
+        const convos = json.conversations || [];
+        if (convos.length === 0) return;
+
+        // Show first convo by default
+        activeChatPartner = convos[0].partner_id;
+        renderMessages(convos[0].messages);
+    } catch(e) {}
+}
+
+function renderMessages(messages) {
+    const container = document.getElementById('chat-messages');
+    if (!messages || messages.length === 0) return;
+    container.innerHTML = '';
+    messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'msg-bubble ' + (m.from_id === SESSION.user_id ? 'sent' : 'received');
+        div.textContent = m.message;
+        container.appendChild(div);
+    });
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || !activeChatPartner) return;
+    input.value = '';
+    await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION.token },
+        body: JSON.stringify({ to_user_id: activeChatPartner, message: text })
+    });
+    loadInbox();
+}
+
+// ─────────────────────────────────────────
+// ADMIN RADAR (unchanged logic, now token-auth'd)
+// ─────────────────────────────────────────
+var map;
+function initMap() {
+    map = L.map('map', { zoomControl: false, attributionControl: false }).setView([myLat, myLon], 16);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    mapInitialized = true;
+}
+
+function startRadarLoop() {
+    updateRadar();
+    navigator.geolocation.watchPosition(pos => {
+        myLat = pos.coords.latitude; myLon = pos.coords.longitude;
+        if (!markers['me']) {
+            markers['me'] = L.circleMarker([myLat, myLon], { radius: 12, fillColor: '#ff00ff', color: '#fff', weight: 3, fillOpacity: 1 }).addTo(map);
+        } else { markers['me'].setLatLng([myLat, myLon]); }
+    }, null, { enableHighAccuracy: true });
+    setInterval(updateRadar, 3000);
+}
+
+async function updateRadar() {
+    try {
+        const res = await fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + SESSION.token } });
+        const json = await res.json();
+        const users = json.entities || [];
+
+        const me = users.find(u => u.id === SESSION.user_id);
+        if (me) document.getElementById('coin-count').textContent = me.credits || 0;
+
+        const currentIds = new Set(users.map(u => u.id));
+
+        if (!lockedTargetId && !isAlerting) {
+            const match = users.find(u => u.is_match === true && u.lat);
+            const wispMatch = users.find(u => u.type === 'wisp' && u.lat);
+            if (match && getDistance(myLat, myLon, match.lat, match.lon) < 100) triggerAlert(match, 'spazz');
+            else if (wispMatch && getDistance(myLat, myLon, wispMatch.lat, wispMatch.lon) < 50) triggerAlert(wispMatch, 'wisp');
+        }
+
+        users.forEach(user => {
+            if (!user.lat) return;
+            const color = user.is_match ? '#8a2be2' : (user.type === 'user' ? '#555' : '#00ffff');
+            if (markers[user.id]) {
+                markers[user.id].setLatLng([user.lat, user.lon]);
+            } else {
+                markers[user.id] = L.circleMarker([user.lat, user.lon], {
+                    radius: user.type === 'user' ? 10 : 8,
+                    fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.8
+                }).addTo(map);
+                markers[user.id].on('click', () => {
+                    lockedTargetId = user.id;
+                    playSound('lock');
+                    document.getElementById('discovery-card').style.display = 'block';
+                });
+            }
+            if (lockedTargetId === user.id) {
+                const dist = getDistance(myLat, myLon, user.lat, user.lon);
+                if (dist > 35) {
+                    lockedTargetId = null;
+                    document.getElementById('status').innerText = "SIGNAL LOST...";
+                    document.getElementById('proximity-fill').style.height = "0%";
+                    document.getElementById('discovery-card').style.display = 'none';
+                    return;
+                }
+                document.getElementById('status').innerText = `LOCKED: ${Math.round(dist)}m`;
+                const pct = Math.max(0, Math.min(100, 100 - dist * 3));
+                document.getElementById('proximity-fill').style.height = pct + "%";
+                if (dist < 15) {
+                    playSound('collect');
+                    harvestTarget(user.id);
+                    lockedTargetId = null;
+                    document.getElementById('discovery-card').style.display = 'none';
+                    document.getElementById('status').innerText = "TARGET ACQUIRED!";
+                }
+            }
+        });
+
+        Object.keys(markers).forEach(id => {
+            if (id !== 'me' && !currentIds.has(id)) { map.removeLayer(markers[id]); delete markers[id]; }
+        });
+    } catch(err) { console.error("Radar Error:", err); }
+}
+
+function triggerAlert(target, type) {
+    isAlerting = true;
+    if (type === 'spazz') {
+        if (navigator.vibrate) navigator.vibrate([500, 110, 500]);
+        playSound('lock');
+        if (confirm(`TARGET DETECTED: ${target.age}${target.gender[0].toUpperCase()}. Lock on?`)) {
+            lockedTargetId = target.id;
+            document.getElementById('discovery-card').style.display = 'block';
+        }
+    } else {
+        if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+        playSound('wisp_ping');
+        if (confirm("Shhh... Be vewy quiet. Hunting a Wisp. Track?")) {
+            lockedTargetId = target.id;
+            document.getElementById('discovery-card').style.display = 'block';
+        }
+    }
+    setTimeout(() => { isAlerting = false; }, 15000);
+}
+
+async function harvestTarget(targetId) {
+    await fetch(`/api/collect/${targetId}`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + SESSION.token }
+    });
+}
+
+// ─────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ─────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const boot = document.getElementById('boot-screen');
+        if (boot) { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 1000); }
+
+        // Check for saved session
+        const saved = localStorage.getItem('spazz_session');
+        if (saved) {
+            try { SESSION = JSON.parse(saved); showApp(); return; } catch(e) {}
+        }
+        showScreen('auth-screen');
+    }, 2200);
+});
+</script>
 </body>
 </html>
