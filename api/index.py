@@ -351,3 +351,189 @@ async def read_index():
     try:
         with open(root_index, "r", encoding="utf-8") as f: return f.read()
     except: return "Error: index.html not found."
+
+# ─────────────────────────────────────────
+# 🛍️ SHOP CATALOG
+# ─────────────────────────────────────────
+SHOP_ITEMS = [
+    # Backgrounds
+    {"id":"bg_neon_city",   "type":"background","name":"Neon City",      "desc":"Purple/cyan cityscape",          "price":50,  "preview":"#1a0033","premium":False},
+    {"id":"bg_void",        "type":"background","name":"The Void",        "desc":"Deep black with star particles", "price":75,  "preview":"#000005","premium":False},
+    {"id":"bg_lava",        "type":"background","name":"Lava Grid",       "desc":"Red hot grid lines",             "price":100, "preview":"#330000","premium":False},
+    {"id":"bg_aurora",      "type":"background","name":"Aurora",          "desc":"Northern lights shimmer",        "price":150, "preview":"#001a1a","premium":True},
+    {"id":"bg_matrix",      "type":"background","name":"Matrix Rain",     "desc":"Green code rain",                "price":200, "preview":"#001000","premium":True},
+    # Ping sounds
+    {"id":"ping_chime",     "type":"ping","name":"Crystal Chime",  "desc":"Clean bell tone",           "price":30,  "preview":"🔔","premium":False},
+    {"id":"ping_zap",       "type":"ping","name":"Zap",            "desc":"Electric crackle",          "price":40,  "preview":"⚡","premium":False},
+    {"id":"ping_blip",      "type":"ping","name":"Retro Blip",     "desc":"8-bit classic",             "price":30,  "preview":"🎮","premium":False},
+    {"id":"ping_whoosh",    "type":"ping","name":"Whoosh",         "desc":"Sweeping air sound",        "price":50,  "preview":"💨","premium":True},
+    {"id":"ping_heartbeat", "type":"ping","name":"Heartbeat",      "desc":"Pulse thump",               "price":60,  "preview":"💓","premium":True},
+    # Flash designs
+    {"id":"flash_lightning","type":"flash","name":"Lightning",    "desc":"Yellow bolt flash",         "price":40,  "preview":"⚡","premium":False},
+    {"id":"flash_ripple",   "type":"flash","name":"Ripple",       "desc":"Expanding ring pulse",      "price":50,  "preview":"🌊","premium":False},
+    {"id":"flash_fire",     "type":"flash","name":"Fire",         "desc":"Orange flame burst",        "price":75,  "preview":"🔥","premium":False},
+    {"id":"flash_galaxy",   "type":"flash","name":"Galaxy Spin",  "desc":"Spiral star explosion",     "price":120, "preview":"🌀","premium":True},
+    {"id":"flash_glitch",   "type":"flash","name":"Glitch",       "desc":"Digital distortion",        "price":100, "preview":"📺","premium":True},
+]
+
+SUBSCRIPTION_PRICE = 299  # credits/month
+
+PREMIUM_COACH_TIPS = {
+    "dating": [
+        "Make eye contact for 3 seconds, look away, repeat. It's magnetic.",
+        "Ask questions you actually want the answer to. Curiosity is attractive.",
+        "Tease lightly. Playfulness signals confidence.",
+        "Don't check your phone when talking to someone interesting.",
+        "Your posture says more than your words. Shoulders back.",
+        "The best opener is just: be genuinely interested in them.",
+        "Smile with your eyes. People feel that before they hear you.",
+    ],
+    "fitness": [
+        "10,000 steps = ~500 calories. You're basically doing cardio by playing Spazz.",
+        "Walking pace matters. Push it slightly faster than comfortable.",
+        "Consistency beats intensity. Showing up every day wins.",
+        "Your body adapts fast. Add hills or stairs when flat gets easy.",
+        "Hydrate before you're thirsty. Thirst is already dehydration.",
+        "Sleep is the most underrated fitness tool. Protect it.",
+        "Zone 2 cardio (moderate walk) burns fat most efficiently.",
+    ],
+    "motivation": [
+        "You showed up today. That already puts you ahead of most.",
+        "Discipline is just doing the thing even when you don't feel like it.",
+        "The version of you 6 months from now will thank you.",
+        "Small actions compounded. Every wisp counts.",
+        "Nobody remembers the days you stayed home.",
+        "Your comfort zone is a cage with no lock. Walk out.",
+        "Energy creates energy. The more you move, the more you want to.",
+    ]
+}
+
+HOTSPOTS_FILE = os.path.join(BASE_DIR, 'hotspots_db.json')
+INVENTORY_FILE = os.path.join(BASE_DIR, 'inventory_db.json')
+
+def load_hotspots():
+    if not os.path.exists(HOTSPOTS_FILE): return []
+    with open(HOTSPOTS_FILE) as f: return json.load(f).get("hotspots", [])
+
+def save_hotspots(spots):
+    with open(HOTSPOTS_FILE, 'w') as f: json.dump({"hotspots": spots}, f, indent=2)
+
+def load_inventory():
+    if not os.path.exists(INVENTORY_FILE): return {}
+    with open(INVENTORY_FILE) as f: return json.load(f)
+
+def save_inventory(inv):
+    with open(INVENTORY_FILE, 'w') as f: json.dump(inv, f, indent=2)
+
+def get_user_inventory(user_id):
+    inv = load_inventory()
+    return inv.get(user_id, {"owned": [], "equipped": {}, "is_premium": False, "premium_until": 0})
+
+def save_user_inventory(user_id, data):
+    inv = load_inventory()
+    inv[user_id] = data
+    save_inventory(inv)
+
+# ─────────────────────────────────────────
+# 🛍️ SHOP ENDPOINTS
+# ─────────────────────────────────────────
+
+@app.get("/api/shop")
+async def get_shop(auth: AuthRecord = Depends(get_current_user)):
+    inv = get_user_inventory(auth.user_id)
+    items = []
+    for item in SHOP_ITEMS:
+        i = dict(item)
+        i["owned"] = item["id"] in inv.get("owned", [])
+        i["equipped"] = inv.get("equipped", {}).get(item["type"]) == item["id"]
+        items.append(i)
+    return {"items": items, "equipped": inv.get("equipped", {}), "is_premium": inv.get("is_premium", False)}
+
+@app.post("/api/shop/buy/{item_id}")
+async def buy_item(item_id: str, auth: AuthRecord = Depends(get_current_user)):
+    item = next((i for i in SHOP_ITEMS if i["id"] == item_id), None)
+    if not item: raise HTTPException(404, "Item not found")
+
+    inv = get_user_inventory(auth.user_id)
+    if item["id"] in inv.get("owned", []):
+        raise HTTPException(400, "Already owned")
+
+    if item.get("premium") and not inv.get("is_premium"):
+        raise HTTPException(403, "Premium required")
+
+    all_users = load_from_db()
+    user = next((u for u in all_users if u.id == auth.user_id), None)
+    if not user: raise HTTPException(404, "User not found")
+    if user.credits < item["price"]:
+        raise HTTPException(400, f"Need {item['price']} credits, you have {user.credits}")
+
+    user.credits -= item["price"]
+    save_to_db(all_users)
+    inv.setdefault("owned", []).append(item_id)
+    save_user_inventory(auth.user_id, inv)
+    return {"status": "purchased", "new_balance": user.credits, "item": item}
+
+@app.post("/api/shop/equip/{item_id}")
+async def equip_item(item_id: str, auth: AuthRecord = Depends(get_current_user)):
+    item = next((i for i in SHOP_ITEMS if i["id"] == item_id), None)
+    if not item: raise HTTPException(404, "Item not found")
+    inv = get_user_inventory(auth.user_id)
+    if item_id not in inv.get("owned", []):
+        raise HTTPException(403, "Not owned")
+    inv.setdefault("equipped", {})[item["type"]] = item_id
+    save_user_inventory(auth.user_id, inv)
+    return {"status": "equipped", "equipped": inv["equipped"]}
+
+@app.post("/api/subscribe")
+async def subscribe(auth: AuthRecord = Depends(get_current_user)):
+    all_users = load_from_db()
+    user = next((u for u in all_users if u.id == auth.user_id), None)
+    if not user: raise HTTPException(404, "Not found")
+    if user.credits < SUBSCRIPTION_PRICE:
+        raise HTTPException(400, f"Need {SUBSCRIPTION_PRICE} credits")
+    user.credits -= SUBSCRIPTION_PRICE
+    save_to_db(all_users)
+    inv = get_user_inventory(auth.user_id)
+    inv["is_premium"] = True
+    inv["premium_until"] = time.time() + (30 * 24 * 3600)
+    save_user_inventory(auth.user_id, inv)
+    return {"status": "subscribed", "new_balance": user.credits, "premium_until": inv["premium_until"]}
+
+@app.get("/api/coach/premium")
+async def premium_coach(category: str = "motivation", auth: AuthRecord = Depends(get_current_user)):
+    inv = get_user_inventory(auth.user_id)
+    if not inv.get("is_premium"):
+        raise HTTPException(403, "Premium required")
+    tips = PREMIUM_COACH_TIPS.get(category, PREMIUM_COACH_TIPS["motivation"])
+    return {"tip": random.choice(tips), "category": category}
+
+# ─────────────────────────────────────────
+# 📍 HOTSPOTS
+# ─────────────────────────────────────────
+
+@app.get("/api/hotspots")
+async def get_hotspots(auth: AuthRecord = Depends(get_current_user)):
+    inv = get_user_inventory(auth.user_id)
+    if not inv.get("is_premium"):
+        raise HTTPException(403, "Premium required to see hotspots")
+    spots = load_hotspots()
+    # Auto-seed example hotspots if none exist
+    if not spots:
+        spots = [
+            {"id":"hs_1","name":"The Grid Bar","type":"bar","lat":39.335,"lon":-82.980,"vibe":"High energy Friday nights","active_users":12},
+            {"id":"hs_2","name":"Yoctangee Park","type":"park","lat":39.338,"lon":-82.979,"vibe":"Morning walkers, wisp hotzone","active_users":8},
+            {"id":"hs_3","name":"Coffee House","type":"cafe","lat":39.331,"lon":-82.984,"vibe":"Chill, good for meetups","active_users":5},
+        ]
+        save_hotspots(spots)
+    return {"hotspots": spots}
+
+@app.post("/api/hotspots/checkin/{spot_id}")
+async def checkin_hotspot(spot_id: str, auth: AuthRecord = Depends(get_current_user)):
+    inv = get_user_inventory(auth.user_id)
+    if not inv.get("is_premium"): raise HTTPException(403, "Premium required")
+    spots = load_hotspots()
+    spot = next((s for s in spots if s["id"] == spot_id), None)
+    if not spot: raise HTTPException(404, "Spot not found")
+    spot["active_users"] = spot.get("active_users", 0) + 1
+    save_hotspots(spots)
+    return {"status": "checked_in", "spot": spot}
