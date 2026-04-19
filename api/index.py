@@ -503,3 +503,88 @@ async def shadow_ban(target_id: str, auth=Depends(get_current_user)):
         raise HTTPException(403, "Admin only")
     supabase.table("users").update({"is_admin": False}).eq("id", target_id).execute()
     return {"status": "banned", "target": target_id}
+
+# ── GOOGLE AUTH ───────────────────────────────────────
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+    email: str
+    display_name: str
+
+@app.post("/api/google-auth")
+async def google_auth(req: GoogleAuthRequest):
+    """
+    Accepts a Google ID token from the Flutter app,
+    verifies it via Google's tokeninfo endpoint,
+    then creates or finds the user in Supabase and returns a Spazz JWT.
+    """
+    import urllib.request
+    import urllib.parse
+
+    # Verify token with Google
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={req.id_token}"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            token_info = json.loads(resp.read().decode())
+    except Exception as e:
+        raise HTTPException(401, f"Google token verification failed: {str(e)}")
+
+    if token_info.get("error"):
+        raise HTTPException(401, "Invalid Google token")
+
+    google_email = token_info.get("email")
+    if not google_email:
+        raise HTTPException(401, "No email in Google token")
+
+    # Normalize email to a safe username
+    base_username = google_email.split("@")[0].replace(".", "_").replace("+", "_")[:20]
+
+    # Check if user already exists by email
+    existing = supabase.table("users").select("*").eq("email", google_email).limit(1).execute()
+
+    if existing.data:
+        user = existing.data[0]
+        token = make_token(user["id"])
+        supabase.table("users").update({"token": token}).eq("id", user["id"]).execute()
+        is_admin = user["id"] in ADMIN_IDS or user.get("username", "").lower() == "ben"
+        return {
+            "token": token,
+            "user_id": user["id"],
+            "username": user["username"],
+            "is_admin": is_admin
+        }
+
+    # New user — create them
+    user_id = "user_" + str(uuid.uuid4())[:8]
+
+    # Make sure username is unique
+    username = base_username
+    suffix = 1
+    while True:
+        check = supabase.table("users").select("id").eq("username", username).limit(1).execute()
+        if not check.data:
+            break
+        username = f"{base_username}{suffix}"
+        suffix += 1
+
+    token = make_token(user_id)
+    supabase.table("users").insert({
+        "id": user_id,
+        "username": username,
+        "email": google_email,
+        "password_hash": "",  # no password for Google users
+        "token": token,
+        "xp": 0,
+        "level": 1,
+        "wisp_coins": 50,
+        "steps": 0,
+        "calories": 0,
+        "distance_m": 0,
+        "is_premium": False,
+    }).execute()
+
+    return {
+        "token": token,
+        "user_id": user_id,
+        "username": username,
+        "is_admin": False
+    }
