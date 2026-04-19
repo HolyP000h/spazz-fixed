@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -15,80 +17,114 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _loading = true;
   bool _purchasing = false;
   String _selectedPlan = 'monthly';
+  String _token = '';
+  String _userId = '';
+
+  // IAP
+  final InAppPurchase _iap = InAppPurchase.instance;
+  StreamSubscription<List<PurchaseDetails>>? _iapSub;
+  List<ProductDetails> _products = [];
+  bool _iapAvailable = false;
+
+  // Product IDs — must match exactly what you create in App Store Connect / Google Play
+  static const String _monthlyId = 'spazz_premium_monthly';
+  static const String _yearlyId = 'spazz_premium_yearly';
+  static const _productIds = {_monthlyId, _yearlyId};
 
   static const _baseUrl = 'https://www.spazzapp.com';
-
-  final Map<String, Map<String, dynamic>> _plans = {
-    'monthly': {
-      'label': 'Monthly',
-      'price': '\$2.99',
-      'period': 'per month',
-      'savings': null,
-    },
-    'yearly': {
-      'label': 'Yearly',
-      'price': '\$19.99',
-      'period': 'per year',
-      'savings': 'Save 44%',
-    },
-  };
 
   @override
   void initState() {
     super.initState();
-    _checkStatus();
+    _init();
   }
 
-  Future<void> _checkStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-    final userId = prefs.getString('user_id') ?? '';
+  @override
+  void dispose() {
+    _iapSub?.cancel();
+    super.dispose();
+  }
 
+  Future<void> _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString('token') ?? '';
+    _userId = prefs.getString('user_id') ?? '';
+
+    // Check existing premium status
     try {
       final res = await http.get(
-        Uri.parse('$_baseUrl/api/user/$userId'),
-        headers: {'Authorization': 'Bearer $token'},
+        Uri.parse('$_baseUrl/api/user/$_userId'),
+        headers: {'Authorization': 'Bearer $_token'},
       );
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
-        setState(() {
-          _isPremium = data['is_premium'] ?? false;
-        });
+        setState(() => _isPremium = data['is_premium'] ?? false);
       }
     } catch (_) {}
+
+    // Set up IAP
+    _iapAvailable = await _iap.isAvailable();
+    if (_iapAvailable) {
+      // Listen for purchase updates
+      _iapSub = _iap.purchaseStream.listen(
+        _onPurchaseUpdate,
+        onDone: () => _iapSub?.cancel(),
+        onError: (e) => _showError('Purchase error: $e'),
+      );
+      await _loadProducts();
+    }
 
     setState(() => _loading = false);
   }
 
-  Future<void> _subscribe() async {
-    setState(() => _purchasing = true);
+  Future<void> _loadProducts() async {
+    final response = await _iap.queryProductDetails(_productIds);
+    if (response.notFoundIDs.isNotEmpty) {
+      debugPrint('IAP products not found: ${response.notFoundIDs}');
+    }
+    setState(() => _products = response.productDetails);
+  }
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-    final userId = prefs.getString('user_id') ?? '';
+  void _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
+        await _activatePremium(purchase.productID);
+        if (purchase.pendingCompletePurchase) {
+          await _iap.completePurchase(purchase);
+        }
+      } else if (purchase.status == PurchaseStatus.error) {
+        _showError(purchase.error?.message ?? 'Purchase failed');
+        setState(() => _purchasing = false);
+      } else if (purchase.status == PurchaseStatus.canceled) {
+        setState(() => _purchasing = false);
+      }
+    }
+  }
 
+  Future<void> _activatePremium(String productId) async {
+    final plan = productId == _yearlyId ? 'yearly' : 'monthly';
     try {
-      final res = await http.post(
+      await http.post(
         Uri.parse('$_baseUrl/api/subscribe'),
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $_token',
           'Content-Type': 'application/json',
         },
-        body: json.encode({'user_id': userId, 'plan': _selectedPlan}),
+        body: json.encode({'user_id': _userId, 'plan': plan}),
       );
+    } catch (_) {}
 
-      if (res.statusCode == 200) {
-        setState(() => _isPremium = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Welcome to Spazz Premium!'),
-            backgroundColor: Color(0xFF7C3AED),
-          ),
-        );
-      }
-    } catch (_) {
-      // For demo purposes, mark as premium
-      setState(() => _isPremium = true);
+    // Save locally too
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_premium', true);
+
+    setState(() {
+      _isPremium = true;
+      _purchasing = false;
+    });
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('🎉 Welcome to Spazz Premium!'),
@@ -96,8 +132,57 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         ),
       );
     }
+  }
 
-    setState(() => _purchasing = false);
+  Future<void> _buy() async {
+    if (_purchasing) return;
+    setState(() => _purchasing = true);
+
+    final targetId = _selectedPlan == 'yearly' ? _yearlyId : _monthlyId;
+
+    if (_iapAvailable && _products.isNotEmpty) {
+      // Real IAP purchase
+      final product = _products.firstWhere(
+        (p) => p.id == targetId,
+        orElse: () => _products.first,
+      );
+      final purchaseParam = PurchaseParam(productDetails: product);
+      await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      // Result comes via purchaseStream listener
+    } else {
+      // Fallback: direct backend activation (dev/testing mode)
+      await _activatePremium(targetId);
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    setState(() => _loading = true);
+    await _iap.restorePurchases();
+    setState(() => _loading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Checking your purchases...'),
+        backgroundColor: Color(0xFF1E1E2E),
+      ),
+    );
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: const Color(0xFFEF4444)),
+    );
+  }
+
+  // Get real price from App Store / Play Store if available
+  String _getPrice(String planKey) {
+    final targetId = planKey == 'yearly' ? _yearlyId : _monthlyId;
+    try {
+      final product = _products.firstWhere((p) => p.id == targetId);
+      return product.price;
+    } catch (_) {
+      return planKey == 'yearly' ? '\$19.99' : '\$2.99';
+    }
   }
 
   @override
@@ -116,19 +201,26 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
           : _isPremium
-              ? _PremiumActiveView()
+              ? _PremiumActiveView(onRestore: _restorePurchases)
               : _UpgradeView(
                   selectedPlan: _selectedPlan,
-                  plans: _plans,
+                  monthlyPrice: _getPrice('monthly'),
+                  yearlyPrice: _getPrice('yearly'),
                   purchasing: _purchasing,
                   onPlanSelected: (p) => setState(() => _selectedPlan = p),
-                  onSubscribe: _subscribe,
+                  onSubscribe: _buy,
+                  onRestore: _restorePurchases,
                 ),
     );
   }
 }
 
+// ── PREMIUM ACTIVE VIEW ───────────────────────────────────────────
+
 class _PremiumActiveView extends StatelessWidget {
+  final VoidCallback onRestore;
+  const _PremiumActiveView({required this.onRestore});
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -143,53 +235,56 @@ class _PremiumActiveView extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: const LinearGradient(
                 colors: [Color(0xFF7C3AED), Color(0xFFEC4899)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7C3AED).withOpacity(0.4),
+                  color: const Color(0xFF7C3AED).withOpacity(0.5),
                   blurRadius: 30,
                   spreadRadius: 5,
                 ),
               ],
             ),
-            child: const Center(
-              child: Text('👑', style: TextStyle(fontSize: 48)),
-            ),
+            child: const Center(child: Text('👑', style: TextStyle(fontSize: 48))),
           ),
           const SizedBox(height: 24),
-          const Text('You\'re Premium!',
+          const Text("You're Premium!",
               style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('Enjoy all exclusive Spazz features',
+          const Text('All exclusive features unlocked',
               style: TextStyle(color: Color(0xFF888899), fontSize: 15)),
-          const SizedBox(height, 32),
           const SizedBox(height: 32),
-          _FeatureRow(emoji: '🔥', title: 'Hotspot Heatmap', desc: 'See where users gather most in real time'),
-          _FeatureRow(emoji: '📊', title: 'Activity Insights', desc: 'Detailed stats on wisp hotspots near you'),
-          _FeatureRow(emoji: '⚡', title: 'Wisp Radar Boost', desc: 'Detect wisps from 2x the distance'),
-          _FeatureRow(emoji: '🎯', title: 'Exclusive Hunts', desc: 'Access premium-only wisp events'),
-          _FeatureRow(emoji: '🚫', title: 'Ad Free', desc: 'Clean, distraction-free experience'),
+          ..._features.map((f) => _FeatureRow(emoji: f[0], title: f[1], desc: f[2])),
+          const SizedBox(height: 24),
+          TextButton(
+            onPressed: onRestore,
+            child: const Text('Restore Purchase',
+                style: TextStyle(color: Color(0xFF7C3AED))),
+          ),
         ],
       ),
     );
   }
 }
 
+// ── UPGRADE VIEW ─────────────────────────────────────────────────
+
 class _UpgradeView extends StatelessWidget {
   final String selectedPlan;
-  final Map<String, Map<String, dynamic>> plans;
+  final String monthlyPrice;
+  final String yearlyPrice;
   final bool purchasing;
   final Function(String) onPlanSelected;
   final VoidCallback onSubscribe;
+  final VoidCallback onRestore;
 
   const _UpgradeView({
     required this.selectedPlan,
-    required this.plans,
+    required this.monthlyPrice,
+    required this.yearlyPrice,
     required this.purchasing,
     required this.onPlanSelected,
     required this.onSubscribe,
+    required this.onRestore,
   });
 
   @override
@@ -200,7 +295,6 @@ class _UpgradeView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 16),
-          // Crown glow
           Container(
             width: 90,
             height: 90,
@@ -227,7 +321,7 @@ class _UpgradeView extends StatelessWidget {
               style: TextStyle(color: Color(0xFF888899), fontSize: 15)),
           const SizedBox(height: 28),
 
-          // Features
+          // Features list
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -236,89 +330,41 @@ class _UpgradeView extends StatelessWidget {
               border: Border.all(color: const Color(0xFF1E1E2E)),
             ),
             child: Column(
-              children: [
-                _FeatureRow(emoji: '🔥', title: 'Hotspot Heatmap', desc: 'See where users gather most in real time'),
-                _FeatureRow(emoji: '📊', title: 'Activity Insights', desc: 'Detailed stats on wisp hotspots near you'),
-                _FeatureRow(emoji: '⚡', title: 'Wisp Radar Boost', desc: 'Detect wisps from 2x the distance'),
-                _FeatureRow(emoji: '🎯', title: 'Exclusive Hunts', desc: 'Access premium-only wisp events'),
-                _FeatureRow(emoji: '🚫', title: 'Ad Free', desc: 'Clean, distraction-free experience'),
-              ],
+              children: _features
+                  .map((f) => _FeatureRow(emoji: f[0], title: f[1], desc: f[2]))
+                  .toList(),
             ),
           ),
           const SizedBox(height: 24),
 
-          // Plan selector
           const Align(
             alignment: Alignment.centerLeft,
             child: Text('Choose a plan',
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 12),
-          ...plans.entries.map((entry) {
-            final key = entry.key;
-            final plan = entry.value;
-            final isSelected = selectedPlan == key;
-            return GestureDetector(
-              onTap: () => onPlanSelected(key),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF13131A),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF1E1E2E),
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                      color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF444460),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(plan['label'],
-                              style: const TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.bold)),
-                          Text(plan['period'],
-                              style: const TextStyle(color: Color(0xFF888899), fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(plan['price'],
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16)),
-                        if (plan['savings'] != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF7C3AED).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(plan['savings'],
-                                style: const TextStyle(
-                                    color: Color(0xFF7C3AED),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold)),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 20),
+
+          // Monthly plan
+          _PlanCard(
+            label: 'Monthly',
+            price: monthlyPrice,
+            period: 'per month',
+            savings: null,
+            isSelected: selectedPlan == 'monthly',
+            onTap: () => onPlanSelected('monthly'),
+          ),
+          const SizedBox(height: 10),
+
+          // Yearly plan
+          _PlanCard(
+            label: 'Yearly',
+            price: yearlyPrice,
+            period: 'per year',
+            savings: 'Save 44%',
+            isSelected: selectedPlan == 'yearly',
+            onTap: () => onPlanSelected('yearly'),
+          ),
+          const SizedBox(height: 24),
 
           // Subscribe button
           SizedBox(
@@ -337,20 +383,111 @@ class _UpgradeView extends StatelessWidget {
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
                   : const Text('Start Premium',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 12),
           const Text('Cancel anytime. No hidden fees.',
               style: TextStyle(color: Color(0xFF888899), fontSize: 12)),
           const SizedBox(height: 8),
-          const Text('Restore Purchase',
-              style: TextStyle(
-                  color: Color(0xFF7C3AED),
-                  fontSize: 13,
-                  decoration: TextDecoration.underline)),
+          GestureDetector(
+            onTap: onRestore,
+            child: const Text('Restore Purchase',
+                style: TextStyle(
+                    color: Color(0xFF7C3AED),
+                    fontSize: 13,
+                    decoration: TextDecoration.underline)),
+          ),
           const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+}
+
+// ── SHARED WIDGETS ────────────────────────────────────────────────
+
+const _features = [
+  ['🔥', 'Hotspot Heatmap', 'See where users gather most in real time'],
+  ['📊', 'Activity Insights', 'Detailed stats on wisp hotspots near you'],
+  ['⚡', 'Wisp Radar Boost', 'Detect wisps from 2x the distance'],
+  ['🎯', 'Exclusive Hunts', 'Access premium-only wisp events'],
+  ['🚫', 'Ad Free', 'Clean, distraction-free experience'],
+];
+
+class _PlanCard extends StatelessWidget {
+  final String label;
+  final String price;
+  final String period;
+  final String? savings;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PlanCard({
+    required this.label,
+    required this.price,
+    required this.period,
+    required this.savings,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF13131A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF1E1E2E),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF444460),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(period,
+                      style: const TextStyle(color: Color(0xFF888899), fontSize: 12)),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(price,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                if (savings != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(savings!,
+                        style: const TextStyle(
+                            color: Color(0xFF7C3AED),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
