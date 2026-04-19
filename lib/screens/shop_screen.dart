@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,11 +17,146 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
   int _coins = 0;
   bool _loading = true;
   List<String> _owned = [];
+  String? _activeSkin;
   String? _token;
 
   static const _baseUrl = 'https://www.spazzapp.com';
 
-  // Hardcoded shop items grouped by category
+  // ── BOSS SKINS ────────────────────────────────────────────────
+  final List<Map<String, dynamic>> _skins = [
+    {
+      'id': 'skin_lightning',
+      'name': 'Storm Caller',
+      'emoji': '⚡',
+      'rarity': 'LEGENDARY',
+      'rarityColor': 0xFFFFD700,
+      'description': 'Lightning strikes ripple from your position. Everyone within 500m sees the flash.',
+      'cost': 500,
+      'effect': 'Lightning flashes pulse outward every 60s. Thunderclap haptic + crack sound.',
+      'ping_sound': '⚡ CRACK',
+      'ping_emoji': '⚡',
+      'haptic': 'heavy',
+    },
+    {
+      'id': 'skin_ghost',
+      'name': 'Phantom',
+      'emoji': '👻',
+      'rarity': 'EPIC',
+      'rarityColor': 0xFFAB5CFF,
+      'description': 'You appear and vanish on other users\' maps like a ghost. Eerie ping sounds.',
+      'cost': 350,
+      'effect': 'Your dot fades in and out on the map. Ghost wail ping sound.',
+      'ping_sound': '👻 WOOOO',
+      'ping_emoji': '👻',
+      'haptic': 'medium',
+    },
+    {
+      'id': 'skin_inferno',
+      'name': 'Inferno',
+      'emoji': '🔥',
+      'rarity': 'LEGENDARY',
+      'rarityColor': 0xFFFF4500,
+      'description': 'A ring of fire blazes from your location. Others feel the heat.',
+      'cost': 500,
+      'effect': 'Expanding fire ring animation every 45s. Deep bass rumble haptic.',
+      'ping_sound': '🔥 ROAR',
+      'ping_emoji': '🔥',
+      'haptic': 'heavy',
+    },
+    {
+      'id': 'skin_arctic',
+      'name': 'Blizzard',
+      'emoji': '❄️',
+      'rarity': 'EPIC',
+      'rarityColor': 0xFF00BFFF,
+      'description': 'Ice shards shoot outward freezing nearby wisps temporarily.',
+      'cost': 350,
+      'effect': 'Snowflake burst animation. Crystal chime ping with freeze haptic.',
+      'ping_sound': '❄️ SHATTER',
+      'ping_emoji': '❄️',
+      'haptic': 'light',
+    },
+    {
+      'id': 'skin_void',
+      'name': 'Void Walker',
+      'emoji': '🌑',
+      'rarity': 'MYTHIC',
+      'rarityColor': 0xFF1A1A2E,
+      'description': 'You exist between dimensions. A black hole pulse warps the map around you.',
+      'cost': 1000,
+      'effect': 'Black hole ripple animation. Deep void hum + gravitational haptic wave.',
+      'ping_sound': '🌑 VOID',
+      'ping_emoji': '🌑',
+      'haptic': 'heavy',
+    },
+    {
+      'id': 'skin_aurora',
+      'name': 'Aurora',
+      'emoji': '🌌',
+      'rarity': 'EPIC',
+      'rarityColor': 0xFF00FF87,
+      'description': 'Northern lights radiate from your position in waves of colour.',
+      'cost': 400,
+      'effect': 'Rainbow wave pulses outward. Ethereal synth chime ping.',
+      'ping_sound': '🌌 CHIME',
+      'ping_emoji': '🌌',
+      'haptic': 'medium',
+    },
+    {
+      'id': 'skin_royale',
+      'name': 'King\'s Decree',
+      'emoji': '👑',
+      'rarity': 'MYTHIC',
+      'rarityColor': 0xFFFFD700,
+      'description': 'A golden crown beacon shoots into the sky. All nearby users are notified.',
+      'cost': 1000,
+      'effect': 'Golden beacon shoots up. Royal trumpet fanfare. Everyone within 1km gets a notification.',
+      'ping_sound': '👑 FANFARE',
+      'ping_emoji': '👑',
+      'haptic': 'heavy',
+    },
+    {
+      'id': 'skin_neon',
+      'name': 'Neon Punk',
+      'emoji': '🌆',
+      'rarity': 'RARE',
+      'rarityColor': 0xFFFF007F,
+      'description': 'Neon grid lines pulse outward like a retro city grid.',
+      'cost': 200,
+      'effect': 'Pink neon grid ripple. Synth laser ping sound.',
+      'ping_sound': '🌆 LASER',
+      'ping_emoji': '🌆',
+      'haptic': 'light',
+    },
+    {
+      'id': 'skin_shadow',
+      'name': 'Shadow Lord',
+      'emoji': '🦇',
+      'rarity': 'EPIC',
+      'rarityColor': 0xFF4A0080,
+      'description': 'Bats scatter from your location. Dark sonar ping.',
+      'cost': 350,
+      'effect': 'Bat swarm animation radiates outward. Sonar ping with echo.',
+      'ping_sound': '🦇 SCREECH',
+      'ping_emoji': '🦇',
+      'haptic': 'medium',
+    },
+  ];
+
+  // ── PING SOUNDS ────────────────────────────────────────────────
+  final List<Map<String, dynamic>> _pings = [
+    {'id': 'ping_thunder', 'name': 'Thunderclap', 'emoji': '⚡', 'cost': 80, 'description': 'Deep crack of thunder that echoes'},
+    {'id': 'ping_ghost', 'name': 'Ghost Wail', 'emoji': '👻', 'cost': 60, 'description': 'Eerie ghostly howl'},
+    {'id': 'ping_dragon', 'name': 'Dragon Roar', 'emoji': '🐉', 'cost': 100, 'description': 'Epic dragon battle cry'},
+    {'id': 'ping_laser', 'name': 'Plasma Laser', 'emoji': '🔫', 'cost': 50, 'description': 'Sci-fi plasma discharge'},
+    {'id': 'ping_royal', 'name': 'Royal Fanfare', 'emoji': '👑', 'cost': 120, 'description': 'Trumpet blast announcing your arrival'},
+    {'id': 'ping_void', 'name': 'Void Echo', 'emoji': '🌑', 'cost': 90, 'description': 'Deep reverberating void hum'},
+    {'id': 'ping_crystal', 'name': 'Crystal Shatter', 'emoji': '💎', 'cost': 70, 'description': 'High-pitched crystal break'},
+    {'id': 'ping_wolf', 'name': 'Wolf Howl', 'emoji': '🐺', 'cost': 65, 'description': 'Lone wolf howl in the dark'},
+    {'id': 'ping_space', 'name': 'Warp Drive', 'emoji': '🚀', 'cost': 85, 'description': 'Hyperdrive engage sound'},
+  ];
+
+  // ── THEMES ────────────────────────────────────────────────────
   final List<Map<String, dynamic>> _themes = [
     {'id': 'theme_midnight', 'name': 'Midnight Purple', 'emoji': '🌌', 'description': 'Dark purple galaxy vibes', 'cost': 50},
     {'id': 'theme_neon', 'name': 'Neon City', 'emoji': '🌆', 'description': 'Bright cyberpunk neon streets', 'cost': 75},
@@ -27,24 +164,6 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
     {'id': 'theme_ocean', 'name': 'Deep Ocean', 'emoji': '🌊', 'description': 'Bioluminescent ocean depths', 'cost': 80},
     {'id': 'theme_fire', 'name': 'Inferno', 'emoji': '🔥', 'description': 'Blazing red and orange heat', 'cost': 100},
     {'id': 'theme_ice', 'name': 'Arctic', 'emoji': '❄️', 'description': 'Cool icy blue tones', 'cost': 90},
-  ];
-
-  final List<Map<String, dynamic>> _sounds = [
-    {'id': 'sound_chime', 'name': 'Crystal Chime', 'emoji': '🔔', 'description': 'Soft magical ping sound', 'cost': 30},
-    {'id': 'sound_laser', 'name': 'Laser Zap', 'emoji': '⚡', 'description': 'Sci-fi laser ping', 'cost': 40},
-    {'id': 'sound_nature', 'name': 'Nature Ping', 'emoji': '🍃', 'description': 'Soft nature ambient ping', 'cost': 35},
-    {'id': 'sound_retro', 'name': 'Retro Beep', 'emoji': '👾', 'description': '8-bit retro game sound', 'cost': 25},
-    {'id': 'sound_whoosh', 'name': 'Whoosh', 'emoji': '💨', 'description': 'Fast swoosh notification', 'cost': 45},
-    {'id': 'sound_bell', 'name': 'Temple Bell', 'emoji': '🛕', 'description': 'Deep resonant bell tone', 'cost': 55},
-  ];
-
-  final List<Map<String, dynamic>> _badges = [
-    {'id': 'badge_hunter', 'name': 'Wisp Hunter', 'emoji': '🏹', 'description': 'Show off your hunting skills', 'cost': 100},
-    {'id': 'badge_explorer', 'name': 'Explorer', 'emoji': '🗺️', 'description': 'For those who roam far', 'cost': 120},
-    {'id': 'badge_champion', 'name': 'Champion', 'emoji': '👑', 'description': 'Top of the leaderboard', 'cost': 200},
-    {'id': 'badge_ghost', 'name': 'Ghost', 'emoji': '👻', 'description': 'Silent and deadly hunter', 'cost': 150},
-    {'id': 'badge_legend', 'name': 'Legend', 'emoji': '⭐', 'description': 'Reserved for the elite', 'cost': 300},
-    {'id': 'badge_rookie', 'name': 'Rookie', 'emoji': '🌱', 'description': 'Just getting started', 'cost': 10},
   ];
 
   @override
@@ -64,6 +183,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('token') ?? '';
     final userId = prefs.getString('user_id') ?? '';
+    _activeSkin = prefs.getString('active_skin');
 
     try {
       final res = await http.get(
@@ -93,35 +213,41 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
       return;
     }
 
-    // Show confirm dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E2E),
         title: Text('Buy ${item['name']}?',
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Row(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(item['emoji'], style: const TextStyle(fontSize: 32)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item['description'],
-                      style: const TextStyle(color: Color(0xFF888899))),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text('✨ ', style: TextStyle(fontSize: 16)),
-                      Text('${item['cost']} Wisp Coins',
-                          style: const TextStyle(
-                              color: Color(0xFF7C3AED), fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ],
+            Text(item['emoji'], style: const TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            Text(item['description'] ?? '',
+                style: const TextStyle(color: Color(0xFF888899)), textAlign: TextAlign.center),
+            if (item['effect'] != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF13131A),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('✨ ${item['effect']}',
+                    style: const TextStyle(color: Color(0xFF7C3AED), fontSize: 12),
+                    textAlign: TextAlign.center),
               ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('✨ ', style: TextStyle(fontSize: 16)),
+                Text('${item['cost']} Wisp Coins',
+                    style: const TextStyle(
+                        color: Color(0xFF7C3AED), fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
             ),
           ],
         ),
@@ -141,43 +267,54 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
 
     if (confirmed != true) return;
 
+    HapticFeedback.heavyImpact();
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id') ?? '';
-      final res = await http.post(
+      await http.post(
         Uri.parse('$_baseUrl/api/shop/buy'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-          'Content-Type': 'application/json',
-        },
+        headers: {'Authorization': 'Bearer $_token', 'Content-Type': 'application/json'},
         body: json.encode({'item_id': item['id'], 'user_id': userId, 'cost': item['cost']}),
       );
+    } catch (_) {}
 
-      if (res.statusCode == 200) {
-        setState(() {
-          _coins -= item['cost'] as int;
-          _owned.add(item['id']);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${item['emoji']} ${item['name']} unlocked!'),
-            backgroundColor: const Color(0xFF7C3AED),
-          ),
-        );
-      }
-    } catch (_) {
-      // Optimistic update even if backend fails
-      setState(() {
-        _coins -= item['cost'] as int;
-        _owned.add(item['id']);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${item['emoji']} ${item['name']} unlocked!'),
-          backgroundColor: const Color(0xFF7C3AED),
-        ),
+    setState(() {
+      _coins -= item['cost'] as int;
+      _owned.add(item['id']);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${item['emoji']} ${item['name']} unlocked!'),
+        backgroundColor: const Color(0xFF7C3AED),
+      ),
+    );
+  }
+
+  Future<void> _equipSkin(Map<String, dynamic> skin) async {
+    HapticFeedback.mediumImpact();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('active_skin', skin['id']);
+    setState(() => _activeSkin = skin['id']);
+
+    // Tell backend
+    try {
+      final userId = prefs.getString('user_id') ?? '';
+      await http.post(
+        Uri.parse('$_baseUrl/api/skin/equip'),
+        headers: {'Authorization': 'Bearer $_token', 'Content-Type': 'application/json'},
+        body: json.encode({'user_id': userId, 'skin_id': skin['id']}),
       );
-    }
+    } catch (_) {}
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${skin['emoji']} ${skin['name']} equipped! Others will feel your presence.'),
+        backgroundColor: Color(skin['rarityColor'] as int),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -202,8 +339,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
                   const Text('✨', style: TextStyle(fontSize: 14)),
                   const SizedBox(width: 4),
                   Text('$_coins',
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -215,9 +351,9 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
           labelColor: const Color(0xFF7C3AED),
           unselectedLabelColor: const Color(0xFF888899),
           tabs: const [
+            Tab(text: '⚡ Boss Skins'),
+            Tab(text: '🔊 Pings'),
             Tab(text: '🎨 Themes'),
-            Tab(text: '🔊 Sounds'),
-            Tab(text: '🏅 Badges'),
           ],
         ),
       ),
@@ -226,14 +362,364 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
           : TabBarView(
               controller: _tabController,
               children: [
+                _SkinsTab(
+                  skins: _skins,
+                  owned: _owned,
+                  activeSkin: _activeSkin,
+                  onBuy: _buy,
+                  onEquip: _equipSkin,
+                ),
+                _PingGrid(items: _pings, owned: _owned, onBuy: _buy),
                 _ItemGrid(items: _themes, owned: _owned, onBuy: _buy),
-                _ItemGrid(items: _sounds, owned: _owned, onBuy: _buy),
-                _ItemGrid(items: _badges, owned: _owned, onBuy: _buy),
               ],
             ),
     );
   }
 }
+
+// ── BOSS SKINS TAB ────────────────────────────────────────────────
+
+class _SkinsTab extends StatelessWidget {
+  final List<Map<String, dynamic>> skins;
+  final List<String> owned;
+  final String? activeSkin;
+  final Function(Map<String, dynamic>) onBuy;
+  final Function(Map<String, dynamic>) onEquip;
+
+  const _SkinsTab({
+    required this.skins,
+    required this.owned,
+    required this.activeSkin,
+    required this.onBuy,
+    required this.onEquip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: skins.length,
+      itemBuilder: (_, i) {
+        final skin = skins[i];
+        final isOwned = owned.contains(skin['id']);
+        final isActive = activeSkin == skin['id'];
+        final rarityColor = Color(skin['rarityColor'] as int);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF13131A),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isActive ? rarityColor : (isOwned ? rarityColor.withOpacity(0.4) : const Color(0xFF1E1E2E)),
+              width: isActive ? 2 : 1,
+            ),
+            boxShadow: isActive
+                ? [BoxShadow(color: rarityColor.withOpacity(0.3), blurRadius: 20, spreadRadius: 2)]
+                : [],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Animated emoji
+                    _PulsingEmoji(emoji: skin['emoji'], color: rarityColor, isActive: isActive),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(skin['name'],
+                                  style: const TextStyle(
+                                      color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: rarityColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: rarityColor.withOpacity(0.5)),
+                                ),
+                                child: Text(skin['rarity'],
+                                    style: TextStyle(
+                                        color: rarityColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(skin['description'],
+                              style: const TextStyle(color: Color(0xFF888899), fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Effect description
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A0A0F),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: rarityColor.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(skin['ping_emoji'], style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(skin['effect'],
+                            style: TextStyle(color: rarityColor.withOpacity(0.9), fontSize: 11)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Action row
+                Row(
+                  children: [
+                    if (!isOwned) ...[
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => onBuy(skin),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: rarityColor,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('✨ ', style: TextStyle(fontSize: 13)),
+                              Text('${skin['cost']}',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else if (isActive) ...[
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: rarityColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: rarityColor),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.bolt, color: rarityColor, size: 16),
+                              const SizedBox(width: 4),
+                              Text('ACTIVE',
+                                  style: TextStyle(
+                                      color: rarityColor,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => onEquip(skin),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E1E2E),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Text('Equip',
+                              style: TextStyle(color: rarityColor, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── PULSING EMOJI WIDGET ──────────────────────────────────────────
+
+class _PulsingEmoji extends StatefulWidget {
+  final String emoji;
+  final Color color;
+  final bool isActive;
+
+  const _PulsingEmoji({required this.emoji, required this.color, required this.isActive});
+
+  @override
+  State<_PulsingEmoji> createState() => _PulsingEmojiState();
+}
+
+class _PulsingEmojiState extends State<_PulsingEmoji> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _scale = Tween(begin: 1.0, end: 1.18).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+    if (widget.isActive) _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_PulsingEmoji old) {
+    super.didUpdateWidget(old);
+    if (widget.isActive && !_ctrl.isAnimating) {
+      _ctrl.repeat(reverse: true);
+    } else if (!widget.isActive && _ctrl.isAnimating) {
+      _ctrl.stop();
+      _ctrl.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color.withOpacity(0.15),
+          boxShadow: widget.isActive
+              ? [BoxShadow(color: widget.color.withOpacity(0.5), blurRadius: 16, spreadRadius: 2)]
+              : [],
+        ),
+        child: Center(child: Text(widget.emoji, style: const TextStyle(fontSize: 28))),
+      ),
+    );
+  }
+}
+
+// ── PING GRID ─────────────────────────────────────────────────────
+
+class _PingGrid extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final List<String> owned;
+  final Function(Map<String, dynamic>) onBuy;
+
+  const _PingGrid({required this.items, required this.owned, required this.onBuy});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final item = items[i];
+        final isOwned = owned.contains(item['id']);
+        return GestureDetector(
+          onTap: isOwned
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${item['emoji']} ${item['name']} — equipped as your ping!'),
+                      backgroundColor: const Color(0xFF7C3AED),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              : null,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF13131A),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isOwned ? const Color(0xFF7C3AED) : const Color(0xFF1E1E2E),
+                width: isOwned ? 2 : 1,
+              ),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(item['emoji'], style: const TextStyle(fontSize: 32)),
+                    if (isOwned)
+                      const Icon(Icons.volume_up, color: Color(0xFF7C3AED), size: 18),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(item['name'],
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 4),
+                Text(item['description'],
+                    style: const TextStyle(color: Color(0xFF666680), fontSize: 11),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isOwned ? null : () => onBuy(item),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isOwned ? const Color(0xFF1E1E2E) : const Color(0xFF7C3AED),
+                      disabledBackgroundColor: const Color(0xFF1E1E2E),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: isOwned
+                        ? const Text('✓ Owned',
+                            style: TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.bold, fontSize: 12))
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('✨ ', style: TextStyle(fontSize: 11)),
+                              Text('${item['cost']}',
+                                  style: const TextStyle(
+                                      color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── THEMES GRID ───────────────────────────────────────────────────
 
 class _ItemGrid extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -287,8 +773,7 @@ class _ItemGrid extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(item['name'],
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
               const SizedBox(height: 4),
               Text(item['description'],
                   style: const TextStyle(color: Color(0xFF666680), fontSize: 11),
@@ -313,8 +798,7 @@ class _ItemGrid extends StatelessWidget {
                           children: [
                             const Text('✨ ', style: TextStyle(fontSize: 12)),
                             Text('${item['cost']}',
-                                style: const TextStyle(
-                                    color: Colors.white, fontWeight: FontWeight.bold)),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ],
                         ),
                 ),
