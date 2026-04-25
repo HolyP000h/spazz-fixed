@@ -192,3 +192,14 @@ header, nav, .top-bar {
 div:not(.spazz-logo-bg) {
     background-color: transparent;
 }
+
+/* Kill the 'Hidden Walls' that wrap the whole app */
+main, #root, #__next, .app-shell, .layout-wrapper {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Ensure the Signal Pulse and Coach boxes don't have hidden backgrounds */
+.ai-coach-container, .signal-pulse-container, [id*="pulse"], [id*="coach"] {
+    background: transparent !important;
+}
