@@ -162,4 +162,22 @@ body, html {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 2px; 
-} /* Fixed: Bracket added here */
+}
+
+/* Make the Main Containers See-Through */
+.container, .main-screen, [id*="card"], [class*="box"] {
+    background: rgba(0, 0, 0, 0.4) !important; /* 40% black, 60% see-through */
+    backdrop-filter: blur(8px); /* Frosty effect */
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Specifically for your Coach and Pulse sections */
+div {
+    background-color: transparent !important;
+}
+
+/* Keep the header dark but let some nebula peek through */
+header, .nav-bar {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-bottom: 1px solid #444;
+}
