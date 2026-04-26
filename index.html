@@ -188,7 +188,13 @@
 <div id="auth-screen" class="screen">
     <div class="logo">SPAZZ</div>
     <div class="tagline">Find your people</div>
-    <div class="auth-box">
+   <div class="auth-box">
+    <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+        <button id="google-btn" class="auth-btn" style="background: #fff; color: #000; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <img src="https://www.google.com/favicon.ico" width="18"> Continue with Google
+        </button>
+    </div>
+</div>
         <div class="auth-tabs">
             <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
             <div class="auth-tab" onclick="switchAuthTab('register')">Join</div>
@@ -328,8 +334,33 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-// ── STATE ──
+    // 1. Initialize Supabase (REPLACE WITH YOUR ACTUAL KEYS)
+    const supabaseUrl = 'https://your-project-id.supabase.co';
+    const supabaseKey = 'your-anon-public-key';
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // 2. The Google Login Function
+    async function spazzLogin() {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin 
+            }
+        });
+        if (error) toast("Login failed: " + error.message);
+    }
+
+    // 3. Attach it to your button
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginBtn = document.getElementById('google-btn');
+        if (loginBtn) {
+            loginBtn.onclick = spazzLogin;
+        }
+    });
+    
 let SESSION=null, myLat=39.333, myLon=-82.982;
 let markers={}, lockedTargetId=null, isAlerting=false, mapInitialized=false;
 let activeChatPartner=null, shopData=[], shopFilter='all', isPremium=false;
@@ -738,6 +769,32 @@ window.addEventListener('load',()=>{
         showScreen('auth-screen');
     },2200);
 });
+<script>
+  // 1. Initialize Supabase
+  const supabaseUrl = 'https://spazz-fixed-holyp000hs-projects.vercel.app/'
+  const supabaseKey = 'your-anon-public-key'
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+
+  // 2. The Google Login Function
+  async function spazzLogin() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // Where the user goes AFTER they log in
+        redirectTo: window.location.origin 
+      }
+    })
+    if (error) console.error("Login failed:", error.message)
+  }
+
+  // 3. Attach it to your button
+  // Make sure your button in the HTML has id="google-btn"
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('google-btn');
+    if (loginBtn) {
+        loginBtn.onclick = spazzLogin;
+    }
+  });
 </script>
 </body>
 </html>
