@@ -21,7 +21,7 @@ ADMIN_IDS = {"user_ben"}
 
 # ── SUPABASE ─────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kytmktshrywvxigobsxd.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dG1rdHNocnl3dnhpZ29ic3hkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjUzOTcyNCwiZXhwIjoyMDkyMTE1NzI0fQ.qif-2FCGwVcwblZWekM-M_221wfGi6PtBHbdlFrbtvo")
+supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 COACH_TIPS_LAZY = [
