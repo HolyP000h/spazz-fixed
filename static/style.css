@@ -165,14 +165,12 @@ body, html {
 }
 
 /* --- THE NEBULA PUNCH-THROUGH --- */
-
-/* Target the main app layout and every section card */
-main, section, .dashboard, .card, .content-box, 
-[class*="container"], [class*="section"], [class*="wrapper"] {
-    background: rgba(0, 0, 0, 0.4) !important; /* 40% tint */
-    backdrop-filter: blur(10px) saturate(150%); /* Glassmorphism effect */
+main, section, .dashboard, .card, .content-box, .auth-box {
+    background: rgba(255, 255, 255, 0.03) !important; /* Lighter tint for more "Glass" feel */
+    backdrop-filter: blur(15px) saturate(160%); /* Heavier blur like the screenshot */
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 12px;
+    border-radius: 20px; /* Rounder corners look more modern */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 /* This specifically kills the solid black on those big inner boxes */
