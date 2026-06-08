@@ -19,12 +19,14 @@ app = FastAPI()
 SECRET_KEY = os.environ.get("SPAZZ_SECRET", "spazz-dev-secret-change-in-prod")
 ADMIN_IDS = {"user_ben"}
 
+# ── CONFIGURATION CONSTANTS ───────────────────
+METER_TO_DEGREE_FACTOR = 0.000009
+HOME_BLACKOUT_RADIUS_METERS = 300
+
 # ── SUPABASE ─────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kytmktshrywvxigobsxd.supabase.co")
-# Make sure this matches the name in your Vercel Environment Variables
 supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") 
 
-# Use the variables you just defined
 supabase: Client = create_client(SUPABASE_URL, supabase_key)
 
 COACH_TIPS_LAZY = [
@@ -59,6 +61,9 @@ class RegisterRequest(BaseModel):
     gender: str = "other"
     seeking: str = "everyone"
     age: int = 25
+    # Captured from the new field on your onboarding layout screen:
+    home_lat: Optional[float] = None
+    home_lon: Optional[float] = None
 
 class LoginRequest(BaseModel):
     username: str
@@ -98,13 +103,27 @@ def get_current_user(request: Request):
         raise HTTPException(401, "Invalid token")
     return user
 
-# ── GEO ──────────────────────────────────
+# ── GEO & PRIVACY SHIELD ─────────────────
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371e3
     dLat = (lat2 - lat1) * math.pi / 180
     dLon = (lon2 - lon1) * math.pi / 180
     a = math.sin(dLat/2)**2 + math.cos(lat1*math.pi/180)*math.cos(lat2*math.pi/180)*math.sin(dLon/2)**2
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+def is_inside_home_geofence(current_lat: float, current_lon: float, user: dict) -> bool:
+    """Mathematical boundary analyzer.
+    
+    Verifies if current tracking attempt lies inside the 300m protected residence bubble.
+    """
+    home_lat = user.get("home_lat")
+    home_lon = user.get("home_lon")
+    
+    if home_lat is None or home_lon is None:
+        return False # No home registered, bypass protection lock safely
+        
+    distance_from_home = haversine(current_lat, current_lon, float(home_lat), float(home_lon))
+    return distance_from_home < HOME_BLACKOUT_RADIUS_METERS
 
 def meters_to_steps(m): return int(m / 0.762)
 def meters_to_calories(m, age=25): return m * 0.06
@@ -138,7 +157,6 @@ def move_wisps():
 
 @app.post("/api/register")
 async def register(req: RegisterRequest):
-    # Check username taken
     existing = supabase.table("users").select("id").eq("username", req.username).execute()
     if existing.data:
         raise HTTPException(400, "Username taken")
@@ -154,6 +172,8 @@ async def register(req: RegisterRequest):
         "age": req.age,
         "gender": req.gender,
         "seeking": req.seeking,
+        "home_lat": req.home_lat, # Securely index home coordinates upfront
+        "home_lon": req.home_lon,
         "steps": 0,
         "wisp_coins": 0,
         "level": 1,
@@ -182,6 +202,13 @@ async def login(req: LoginRequest):
 @app.post("/api/location")
 async def update_location(loc: LocationUpdate, auth=Depends(get_current_user)):
     user = auth
+    
+    # --- GEOPRIVACY SHIELD GATEKEEPER ---
+    if is_inside_home_geofence(loc.lat, loc.lon, user):
+        # Force server offline to keep home invisible on global radar matrices
+        supabase.table("users").update({"online": False}).eq("id", user["id"]).execute()
+        raise HTTPException(403, "🚨 SECURITY LOCK: Cannot broadcast Spazz Signal inside your 300m protected Home Sector.")
+
     last_lat = user.get("last_lat")
     last_lon = user.get("last_lon")
     distance_m = user.get("distance_m", 0) or 0
@@ -212,11 +239,9 @@ async def update_location(loc: LocationUpdate, auth=Depends(get_current_user)):
 async def get_users(auth=Depends(get_current_user)):
     is_admin = auth["id"] in ADMIN_IDS or auth["username"].lower() == "ben"
 
-    # Get online users from Supabase
     result = supabase.table("users").select("*").eq("online", True).execute()
     online_users = result.data or []
 
-    # Manage wisps in memory
     move_wisps()
     wisps = get_wisps()
     target_wisps = max(10, len(online_users) * 5)
@@ -301,7 +326,6 @@ async def collect_target(target_id: str, auth=Depends(get_current_user)):
     reward = wisp.get("wisp_reward", random.randint(3, 10))
     remove_wisp(target_id)
 
-    # Update user stats in Supabase
     user = auth
     new_coins = (user.get("wisp_coins", 0) or 0) + reward
     new_xp = (user.get("xp", 0) or 0) + 1
@@ -364,7 +388,7 @@ SHOP_ITEMS = [
     {"id":"ping_heartbeat", "type":"ping","name":"Heartbeat",      "desc":"Pulse thump",               "price":250, "preview":"💓","premium":True},
     {"id":"flash_lightning","type":"flash","name":"Lightning",    "desc":"Yellow bolt flash",         "price":90,  "preview":"⚡","premium":False},
     {"id":"flash_ripple",   "type":"flash","name":"Ripple",       "desc":"Expanding ring pulse",      "price":120, "preview":"🌊","premium":False},
-    {"id":"flash_fire",     "type":"flash","name":"Fire",         "desc":"Orange flame burst",        "price":200, "preview":"🔥","premium":False},
+    {"id":"flash_fire",     "type":"flash","name":"Fire",          "desc":"Orange flame burst",        "price":200, "preview":"🔥","premium":False},
     {"id":"flash_galaxy",   "type":"flash","name":"Galaxy Spin",  "desc":"Spiral star explosion",     "price":450, "preview":"🌀","premium":True},
     {"id":"flash_glitch",   "type":"flash","name":"Glitch",       "desc":"Digital distortion",        "price":350, "preview":"📺","premium":True},
 ]
@@ -449,7 +473,6 @@ async def equip_item(item_id: str, auth=Depends(get_current_user)):
     if item_id not in owned_ids:
         raise HTTPException(403, "Not owned")
 
-    # Remove old equipped of same type
     supabase.table("inventory").delete().eq("user_id", auth["id"]).eq("item_type", "equipped").eq("item_category", item["type"]).execute()
     supabase.table("inventory").insert({
         "user_id": auth["id"],
@@ -515,15 +538,9 @@ class GoogleAuthRequest(BaseModel):
 
 @app.post("/api/google-auth")
 async def google_auth(req: GoogleAuthRequest):
-    """
-    Accepts a Google ID token from the Flutter app,
-    verifies it via Google's tokeninfo endpoint,
-    then creates or finds the user in Supabase and returns a Spazz JWT.
-    """
     import urllib.request
     import urllib.parse
 
-    # Verify token with Google
     try:
         url = f"https://oauth2.googleapis.com/tokeninfo?id_token={req.id_token}"
         with urllib.request.urlopen(url, timeout=5) as resp:
@@ -538,10 +555,8 @@ async def google_auth(req: GoogleAuthRequest):
     if not google_email:
         raise HTTPException(401, "No email in Google token")
 
-    # Normalize email to a safe username
     base_username = google_email.split("@")[0].replace(".", "_").replace("+", "_")[:20]
 
-    # Check if user already exists by email
     existing = supabase.table("users").select("*").eq("email", google_email).limit(1).execute()
 
     if existing.data:
@@ -556,10 +571,8 @@ async def google_auth(req: GoogleAuthRequest):
             "is_admin": is_admin
         }
 
-    # New user — create them
     user_id = "user_" + str(uuid.uuid4())[:8]
 
-    # Make sure username is unique
     username = base_username
     suffix = 1
     while True:
@@ -574,7 +587,7 @@ async def google_auth(req: GoogleAuthRequest):
         "id": user_id,
         "username": username,
         "email": google_email,
-        "password_hash": "",  # no password for Google users
+        "password_hash": "", 
         "token": token,
         "xp": 0,
         "level": 1,
@@ -583,6 +596,8 @@ async def google_auth(req: GoogleAuthRequest):
         "calories": 0,
         "distance_m": 0,
         "is_premium": False,
+        "home_lat": None, # Google quick signup leaves this empty; must be updated in profile editor later
+        "home_lon": None
     }).execute()
 
     return {
@@ -596,7 +611,6 @@ async def google_auth(req: GoogleAuthRequest):
 
 @app.post("/api/location/update")
 async def location_update_flutter(request: Request, auth=Depends(get_current_user)):
-    """Flutter map screen pings this every 30s with lat/lng."""
     body = await request.json()
     lat = body.get("lat")
     lng = body.get("lng")
@@ -604,6 +618,12 @@ async def location_update_flutter(request: Request, auth=Depends(get_current_use
         raise HTTPException(400, "lat and lng required")
 
     user = auth
+    
+    # --- GEOPRIVACY SHIELD GATEKEEPER ---
+    if is_inside_home_geofence(lat, lng, user):
+        supabase.table("users").update({"online": False}).eq("id", user["id"]).execute()
+        raise HTTPException(403, "🚨 SECURITY LOCK: Cannot update location matrices while inside your 300m protected Home Sector.")
+
     last_lat = user.get("last_lat")
     last_lon = user.get("last_lon")
     distance_m = user.get("distance_m", 0) or 0
@@ -616,7 +636,6 @@ async def location_update_flutter(request: Request, auth=Depends(get_current_use
     steps = meters_to_steps(distance_m)
     calories = round(meters_to_calories(distance_m, user.get("age", 25)), 1)
 
-    # Track hotspot visits — increment visit count for nearby hotspots
     try:
         hotspots_res = supabase.table("hotspots").select("*").execute()
         for hs in (hotspots_res.data or []):
@@ -645,13 +664,15 @@ async def location_update_flutter(request: Request, auth=Depends(get_current_use
 
 @app.get("/api/nearby")
 async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_current_user)):
-    """Returns nearby users, wisps, and hotspots for the map screen."""
     RADIUS_M = 2000  # 2km radius
 
-    # Nearby users (online in last 5 minutes)
+    # --- GEOPRIVACY SHIELD GATEKEEPER ---
+    if is_inside_home_geofence(lat, lng, auth):
+        raise HTTPException(403, "🚨 SECURITY LOCK: Proximity query failed. Signal stealth mode is forced inside your Home Sector.")
+
     cutoff = time.time() - 300
     all_users_res = supabase.table("users").select(
-        "id,username,lat,lon,is_premium,last_seen"
+        "id,username,lat,lon,is_premium,last_seen,home_lat,home_lon"
     ).eq("online", True).execute()
 
     nearby_users = []
@@ -662,6 +683,12 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
             continue
         if (u.get("last_seen") or 0) < cutoff:
             continue
+            
+        # Extra safety fallback check: verify this other user didn't somehow bypass their home sector block
+        if u.get("home_lat") is not None and u.get("home_lon") is not None:
+            if haversine(u["lat"], u["lon"], float(u["home_lat"]), float(u["home_lon"])) < HOME_BLACKOUT_RADIUS_METERS:
+                continue
+
         dist = haversine(lat, lng, u["lat"], u["lon"])
         if dist <= RADIUS_M:
             nearby_users.append({
@@ -672,7 +699,6 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
                 "is_premium": u.get("is_premium", False),
             })
 
-    # Wisps near the user (from in-memory + random generation)
     move_wisps()
     wisps_raw = get_wisps()
     nearby_wisps = []
@@ -686,7 +712,6 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
                 "xp": w.get("wisp_reward", 10),
             })
 
-    # Spawn some wisps near the user if none exist
     if len(nearby_wisps) < 5:
         for _ in range(5 - len(nearby_wisps)):
             wisp = {
@@ -705,7 +730,6 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
                 "xp": wisp["wisp_reward"],
             })
 
-    # Hotspots (heatmap data — returned for all, filtered on frontend by premium)
     hotspots_res = supabase.table("hotspots").select("*").execute()
     nearby_hotspots = []
     for hs in (hotspots_res.data or []):
@@ -730,17 +754,14 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
 
 @app.post("/api/wisp/collect")
 async def collect_wisp(request: Request, auth=Depends(get_current_user)):
-    """Called when user taps a wisp on the map."""
     body = await request.json()
     wisp_id = body.get("wisp_id")
 
     wisp = _wisps.get(wisp_id)
     xp_reward = wisp.get("wisp_reward", 10) if wisp else 10
 
-    # Remove wisp
     remove_wisp(wisp_id)
 
-    # Update user XP + wisp coins
     user = auth
     new_xp = (user.get("xp") or 0) + xp_reward
     new_level = max(1, new_xp // 100 + 1)
@@ -757,7 +778,6 @@ async def collect_wisp(request: Request, auth=Depends(get_current_user)):
 
 @app.get("/api/user/{user_id}")
 async def get_user(user_id: str, auth=Depends(get_current_user)):
-    """Get a user's profile by ID."""
     result = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
     if not result.data:
         raise HTTPException(404, "User not found")
@@ -778,7 +798,6 @@ async def get_user(user_id: str, auth=Depends(get_current_user)):
 
 @app.post("/api/subscribe")
 async def subscribe(request: Request, auth=Depends(get_current_user)):
-    """Mark a user as premium."""
     body = await request.json()
     plan = body.get("plan", "monthly")
     supabase.table("users").update({
@@ -789,12 +808,10 @@ async def subscribe(request: Request, auth=Depends(get_current_user)):
 
 # ── PING SYSTEM ───────────────────────────────────────────────────
 
-# In-memory ping queue (Vercel ephemeral, good enough for real-time)
 _active_pings = {}  # ping_id -> ping data
 
 @app.post("/api/ping/send")
 async def send_ping(request: Request, auth=Depends(get_current_user)):
-    """Send a ping that broadcasts to nearby users."""
     body = await request.json()
 
     priority = body.get("priority", 1)
@@ -802,7 +819,10 @@ async def send_ping(request: Request, auth=Depends(get_current_user)):
     lat = body.get("lat", 0)
     lng = body.get("lng", 0)
 
-    # Premium pings have shorter cooldown enforced server-side
+    # --- GEOPRIVACY SHIELD GATEKEEPER ---
+    if is_inside_home_geofence(lat, lng, auth):
+        raise HTTPException(403, "🚨 SECURITY LOCK: Cannot broadcast pulse pings from inside your 300m protected Home Sector.")
+
     user_id = auth["id"]
     cooldown_key = f"ping_cooldown_{user_id}"
 
@@ -821,12 +841,11 @@ async def send_ping(request: Request, auth=Depends(get_current_user)):
         "lng": lng,
         "is_premium": is_premium,
         "sent_at": time.time(),
-        "expires_at": time.time() + 30,  # pings expire after 30s
+        "expires_at": time.time() + 30, 
     }
 
     _active_pings[ping_id] = ping_data
 
-    # Also persist to Supabase so users who poll get it
     try:
         supabase.table("pings").insert({
             "id": ping_id,
@@ -848,19 +867,17 @@ async def send_ping(request: Request, auth=Depends(get_current_user)):
 
 @app.get("/api/ping/nearby")
 async def get_nearby_pings(lat: float, lng: float, auth=Depends(get_current_user)):
-    """
-    Returns pings near the user, sorted by priority descending.
-    Higher priority (paid) pings surface first — they push through free ones.
-    """
     PING_RADIUS_M = 1000  # 1km
     now = time.time()
 
-    # Clean expired pings
+    # --- GEOPRIVACY SHIELD GATEKEEPER ---
+    if is_inside_home_geofence(lat, lng, auth):
+        raise HTTPException(403, "🚨 SECURITY LOCK: Nearby ping collection suspended while in home stealth mode.")
+
     expired = [k for k, v in _active_pings.items() if v.get("expires_at", 0) < now]
     for k in expired:
         del _active_pings[k]
 
-    # Get pings from Supabase too (other instances)
     try:
         cutoff_time = now - 30
         db_pings = supabase.table("pings").select("*").gt("created_at", 
@@ -887,7 +904,6 @@ async def get_nearby_pings(lat: float, lng: float, auth=Depends(get_current_user
     except:
         pass
 
-    # Filter to nearby, exclude own pings
     nearby = []
     for ping in _active_pings.values():
         if ping["user_id"] == auth["id"]:
@@ -896,7 +912,6 @@ async def get_nearby_pings(lat: float, lng: float, auth=Depends(get_current_user
         if dist <= PING_RADIUS_M:
             nearby.append({**ping, "distance_m": round(dist)})
 
-    # Sort by priority DESC — paid pings always surface first
     nearby.sort(key=lambda p: p["priority"], reverse=True)
 
-    return {"pings": nearby[:10]}  # max 10 pings at once
+    return {"pings": nearby[:10]}
