@@ -55,6 +55,19 @@
         }
         .tagline{font-size:0.75rem; letter-spacing:5px; color:var(--neon-cyan); margin-bottom:36px; text-transform:uppercase;}
 
+        .manifesto-text {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    max-width: 320px;
+    margin: -15px auto 30px auto;
+    letter-spacing: 0.5px;
+    border-left: 2px solid var(--neon-pink);
+    border-right: 2px solid var(--neon-cyan);
+    padding: 0 12px;
+}
+
         .auth-box{
             width:100%; max-width:360px;
             background: var(--glass);
@@ -68,10 +81,37 @@
         .auth-tab{flex:1;padding:10px;text-align:center;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:rgba(255,255,255,0.4);border-bottom:2px solid transparent;transition:all 0.2s;}
         .auth-tab.active{color:var(--neon-pink);border-bottom-color:var(--neon-pink);}
 
-        .auth-form{display:none;flex-direction:column;gap:14px;}
-        .auth-form.active{display:flex;}
-        .auth-form input,.auth-form select{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 16px;color:#fff;font-size:0.9rem;outline:none;}
-        
+/* --- AUTH FORMS & INPUTS --- */
+        /* Hide all forms by default */
+        .auth-form {
+            display: none !important;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* Explicitly show only the active form container */
+        .auth-form.active {
+            display: flex !important;
+        }
+
+        /* Unified input and select element styling */
+        .auth-form input, .auth-form select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        /* Real-time interactive cyan glow loop */
+        .auth-form input:focus, .auth-form select:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+        }
         .auth-btn{
             background:transparent; border:2px solid var(--neon-pink);
             color:#fff; padding:14px; border-radius:25px;
@@ -82,8 +122,28 @@
         }
         .auth-btn:hover{ background: var(--neon-pink); box-shadow: 0 0 30px var(--neon-pink); color: #000; }
         
-        #google-btn{ background: #fff !important; color: #000 !important; border:none; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px;}
+#google-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: 25px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
 
+#google-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
         /* BOOT SCREEN */
         #boot-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1s ease;}
         .glitch-text{color:var(--neon-cyan);letter-spacing:5px;font-size:0.7rem;text-align:center;}
@@ -102,8 +162,12 @@
 
 <div id="auth-screen" class="screen">
     <div class="ping-badge">Nearby User Ping Active</div>
-    <div class="logo">SPAZZ</div>
-    <div class="tagline">Find your people</div>
+   <div class="logo">SPAZZ</div>
+<div class="tagline">Move. Discover. Connect.</div>
+
+<p class="manifesto-text">
+    Spazz is the first of its kind—a decentralized, high-fidelity proximity matrix that turns real-world movement into raw digital fuel.
+</p>
     
     <div class="auth-box">
         <div class="auth-tabs">
@@ -131,6 +195,41 @@
     </div>
 </div>
 
+<div id="main-app-screen" class="screen">
+    <div class="ping-badge" style="border-color: var(--neon-cyan); color: var(--neon-cyan);">
+        Telemetry Link Stable
+    </div>
+    
+    <div class="logo" style="text-shadow: 0 0 15px var(--neon-cyan);">GRID CENTRAL</div>
+    <div class="tagline" style="color: #fff; opacity: 0.6; margin-bottom: 20px;">Secure Session Matrix Active</div>
+
+    <div class="auth-box" style="border-color: rgba(0, 255, 255, 0.2); max-width: 480px; text-align: center;">
+        <h3 style="color: var(--neon-cyan); letter-spacing: 3px; margin-top: 0; font-size: 1.1rem; text-transform: uppercase;">
+            Proximity Sensors Online
+        </h3>
+        
+        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; line-height: 1.6; margin-bottom: 24px;">
+            Your real-world coordinates are securely binding to the decentralized node array. The 300-meter "Home Sector" blackout defense rule is active.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 12px;">
+                <div style="font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 1px; text-transform: uppercase;">Wisps Collected</div>
+                <div style="font-size: 1.5rem; font-weight: 800; margin-top: 4px;">0</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 12px;">
+                <div style="font-size: 0.65rem; color: var(--neon-pink); letter-spacing: 1px; text-transform: uppercase;">Sync Radius</div>
+                <div style="font-size: 1.5rem; font-weight: 800; margin-top: 4px;">Active</div>
+            </div>
+        </div>
+
+        <button class="auth-btn" style="border-color: var(--neon-cyan); width: 100%; margin-top: 0; box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);" 
+                onclick="localStorage.clear(); window.location.hash=''; window.location.reload();">
+            Disconnect from Grid
+        </button>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
     // 1. Setup Supabase
@@ -146,6 +245,54 @@
         });
         if (error) toast("Error: " + error.message);
     }
+    // 2b. Traditional Authentication Form Paths
+    async function doLogin(event) {
+        event.preventDefault(); // Stop page from refreshing natively
+        const user = document.getElementById('login-username').value;
+        const pass = document.getElementById('login-password').value;
+        
+        console.log("Attempting grid synchronization for: " + user);
+        
+        // Use Supabase core email client authentication sequence
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: user.includes('@') ? user : `${user}@spazzmail.com`, // Email fallback string check
+            password: pass,
+        });
+
+        if (error) {
+            toast("🔒 ACCESS DENIED: " + error.message);
+        } else if (data?.session) {
+            localStorage.setItem("spazz_session", data.session.access_token);
+            toast("Grid connection established. Welcome back.");
+            document.getElementById('auth-screen').classList.remove('active');
+            document.getElementById('main-app-screen').classList.add('active');
+        }
+    }
+
+    async function doRegister(event) {
+        event.preventDefault(); // Stop page from refreshing natively
+        const user = document.getElementById('reg-username').value;
+        const pass = document.getElementById('reg-password').value;
+        const age = document.getElementById('reg-age').value;
+        const gender = document.getElementById('reg-gender').value;
+
+        toast("Transmitting user parameters to node cluster...");
+
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: user.includes('@') ? user : `${user}@spazzmail.com`,
+            password: pass,
+            options: {
+                data: { username: user, age: parseInt(age), gender: gender } // Save gaming profile metadata
+            }
+        });
+
+        if (error) {
+            toast("❌ SYNC FAILED: " + error.message);
+        } else {
+            toast("Account localized! Please check your login credentials.");
+            switchAuthTab('login');
+        }
+    }
 
     function switchAuthTab(tab) {
         document.getElementById('login-form').classList.toggle('active', tab === 'login');
@@ -159,18 +306,45 @@
         setTimeout(() => el.classList.remove('show'), 3000);
     }
 
-    // 3. Init UI
+    // 3. Init UI & Token Interceptor
     window.addEventListener('load', () => {
         const loginBtn = document.getElementById('google-btn');
         if (loginBtn) loginBtn.onclick = spazzLogin;
 
+        // Check if user is returning from a fresh Google redirection parse loop
+        const hash = window.location.hash;
+        let isLoggedIn = false;
+
+        if (hash && hash.includes("access_token")) {
+            console.log("🎯 Access token caught! Saving grid session parameters...");
+            const params = new URLSearchParams(hash.replace("#", "?"));
+            const token = params.get("access_token");
+            
+            if (token) {
+                localStorage.setItem("spazz_session", token);
+                isLoggedIn = true;
+                // Clean the address bar URL string smoothly
+                window.history.pushState({}, document.title, window.location.pathname);
+            }
+        }
+
+        // Handle Boot Animation Transitions
         setTimeout(() => {
             const boot = document.getElementById('boot-screen');
             if (boot) {
                 boot.style.opacity = '0';
                 setTimeout(() => { 
                     boot.remove(); 
-                    document.getElementById('auth-screen').classList.add('active'); 
+                    
+                    if (isLoggedIn) {
+                        // Swap out of auth completely and load your main app view
+                        toast("Grid connection established. Welcome back.");
+                        document.getElementById('auth-screen').classList.remove('active');
+                        document.getElementById('main-app-screen')?.classList.add('active');
+                    } else {
+                        // Regular flow: Default straight into the high-fidelity login screen
+                        document.getElementById('auth-screen').classList.add('active'); 
+                    }
                 }, 1000);
             }
         }, 2000);
