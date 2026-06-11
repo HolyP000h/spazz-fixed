@@ -25,9 +25,7 @@ HOME_BLACKOUT_RADIUS_METERS = 300
 
 # ── SUPABASE ─────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kytmktshrywvxigobsxd.supabase.co")
-supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") 
-
-supabase: Client = create_client(SUPABASE_URL, supabase_key)
+supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "sb_publishable_VPsSI1rQd7rrqkqbeNLk6Q_eGATldlk")
 
 COACH_TIPS_LAZY = [
     "You've been still for a while. Wisps don't come to you.",
