@@ -244,26 +244,7 @@ async def get_users(auth=Depends(get_current_user)):
     result = supabase.table("users").select("*").eq("online", True).execute()
     online_users = result.data or []
 
-    move_wisps()
-    wisps = get_wisps()
-    target_wisps = max(10, len(online_users) * 5)
-
-    if len(wisps) < target_wisps and online_users:
-        for _ in range(target_wisps - len(wisps)):
-            anchor = random.choice(online_users)
-            wisp = {
-                "id": f"wisp_{uuid.uuid4().hex[:6]}",
-                "username": "Wisp",
-                "type": "wisp",
-                "lat": anchor["lat"] + random.uniform(-0.02, 0.02) if anchor.get("lat") else 39.333 + random.uniform(-0.02, 0.02),
-                "lon": anchor["lon"] + random.uniform(-0.02, 0.02) if anchor.get("lon") else -82.982 + random.uniform(-0.02, 0.02),
-                "wisp_class": "whisp-cyan",
-                "wisp_reward": random.choices([3, 5, 7, 10, 15, 20, 25], weights=[30, 25, 20, 12, 7, 4, 2])[0]
-            }
-            add_wisp(wisp)
-
-    current_user = auth
-    coach_tip = smart_coach_tip(current_user)
+    # Cleaned: Removed duplicate wisp spawning loop layers to save server resources
 
     entities = []
     for u in online_users:
@@ -275,22 +256,23 @@ async def get_users(auth=Depends(get_current_user)):
                 "is_premium": u.get("is_premium", False)
             })
 
+    # Return local ephemeral array parameters safely
     entities += get_wisps()
 
     return {
         "entities": entities,
         "me": {
-            "id": current_user["id"],
-            "username": current_user["username"],
-            "steps": current_user.get("steps", 0),
-            "calories": current_user.get("calories", 0),
-            "distance_m": current_user.get("distance_m", 0),
-            "credits": current_user.get("wisp_coins", 0),
-            "wisps_collected": current_user.get("xp", 0),
-            "level": current_user.get("level", 1),
-            "is_premium": current_user.get("is_premium", False),
+            "id": auth["id"],
+            "username": auth["username"],
+            "steps": auth.get("steps", 0),
+            "calories": auth.get("calories", 0),
+            "distance_m": auth.get("distance_m", 0),
+            "credits": auth.get("wisp_coins", 0),
+            "wisps_collected": auth.get("xp", 0),
+            "level": auth.get("level", 1),
+            "is_premium": auth.get("is_premium", False),
         },
-        "coach_tip": coach_tip,
+        "coach_tip": smart_coach_tip(auth),
         "is_admin": is_admin,
     }
 
@@ -710,7 +692,7 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
             nearby_wisps.append({
                 "id": w["id"],
                 "lat": w["lat"],
-                "lng": w.get("lon", w.get("lng", 0)),
+                "lon": lng + random.uniform(-0.01, 0.01),
                 "xp": w.get("wisp_reward", 10),
             })
 
