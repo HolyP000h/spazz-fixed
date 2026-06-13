@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPAZZ</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
@@ -130,120 +131,122 @@
 
 <div id="toast"></div>
 
-<div class="phone-container">
+<main>
+    <div class="phone-container">
 
-    <div id="auth-screen" class="screen">
-        <div class="ping-badge">Nearby User Ping Active</div>
-        <div class="logo-text">SPAZZ</div>
-        <div class="tagline">Move. Discover. Connect.</div>
+        <div id="auth-screen" class="screen">
+            <div class="ping-badge">Nearby User Ping Active</div>
+            <div class="logo-text">SPAZZ</div>
+            <div class="tagline">Move. Discover. Connect.</div>
 
-        <p class="manifesto-text">
-            Spazz turns real-world proximity and movement into a live social tracking matrix. Follow the sensory radar loop to secure human connections.
-        </p>
-            
-        <div class="auth-box">
-            <div class="auth-tabs">
-                <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
-                <div class="auth-tab" onclick="switchAuthTab('register')">Join</div>
-            </div>
-            
-            <form class="auth-form active" id="login-form" onsubmit="doLogin(event)">
-                <input type="text" id="login-username" placeholder="Username" autocomplete="username" required>
-                <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
-                <button type="submit" class="auth-btn">Enter the Grid</button>
-            </form>
-
-            <form class="auth-form" id="register-form" onsubmit="doRegister(event)">
-                <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" required>
-                <input type="password" id="reg-password" placeholder="Password" autocomplete="new-password" required>
-                <input type="number" id="reg-age" placeholder="Age" min="18" max="99" required>
-                <select id="reg-gender"><option value="male">Male</option><option value="female">Female</option></select>
-                <button type="submit" class="auth-btn">Create Account</button>
-            </form>
-
-            <button id="google-btn" class="auth-btn">
-                <img src="https://www.google.com/favicon.ico" width="18"> Continue with Google
-            </button>
-        </div>
-    </div>
-
-    <div id="main-app-screen" class="screen">
-        <div id="search-pane" class="search-overlay">
-            <div class="overlay-header">
-                <div class="overlay-title">[ ENTER GRID COORDINATES / DESTINATION... ]</div>
-                <input type="text" class="overlay-input-box" value="> Centering Signal . . ." readonly>
-            </div>
-            <div class="shortcut-title">Frequent Encounters</div>
-            <div class="shortcut-list">
-                <div class="shortcut-row" onclick="selectDestination('Coffee Roasters Trail End')">☕ Coffee Roasters Trail End — 100% Match</div>
-                <div class="shortcut-row" onclick="selectDestination('District Venue / Club')">🎵 District Venue / Club — Signal Strong</div>
-                <div class="shortcut-row" onclick="selectDestination('Business Travel / Lounge')">💼 Business Travel / Lounge — 2 Waiting</div>
-            </div>
-        </div>
-
-        <div class="hud-header">
-            <div class="header-btn">🔍</div>
-            <div class="header-logo">SPAZZ</div>
-            <div class="header-btn" onclick="logoutGrid()">≡</div>
-        </div>
-
-        <div class="hud-content">
-            <div class="telemetry-container">
-                <div class="search-bar-trigger" onclick="toggleSearchOverlay(true)">
-                    Enter Current Destination to map possible encounter
+            <p class="manifesto-text">
+                Spazz turns real-world proximity and movement into a live social tracking matrix. Follow the sensory radar loop to secure human connections.
+            </p>
+                
+            <div class="auth-box">
+                <div class="auth-tabs">
+                    <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                    <div class="auth-tab" onclick="switchAuthTab('register')">Join</div>
                 </div>
+                
+                <form class="auth-form active" id="login-form" onsubmit="doLogin(event)">
+                    <input type="text" id="login-username" placeholder="Username" autocomplete="username" required>
+                    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
+                    <button type="submit" class="auth-btn">Enter the Grid</button>
+                </form>
 
-                <div class="telemetry-list">
-                    <div class="telemetry-row">🏁 ACTIVE DESTINY WAYPOINT</div>
-                    <div class="telemetry-row" id="active-goal-text">📍 GOAL: CHOOSE A DESTINATION ENTRY</div>
-                    <div class="telemetry-row">🏃 TARGET DISTANCE: 800M (PREVIOUS BEST: 500M)</div>
-                    <div class="telemetry-row">🛰️ SPAZZ SIGNAL: ENCRYPTED &amp; BROADCASTING</div>
-                    <div class="telemetry-row">✨ VICTORY MEETING: ESTIMATED AT TRAIL END</div>
-                    <div class="telemetry-row" style="color: var(--neon-pink); font-weight: bold;">🎯 DESTINATION MATCH: 100%</div>
-                    
-                    <div class="encounter-card">
-                        <div>🔒 ENCRYPTED MATCH DETECTED</div>
-                        <div>📁 CONTEXT: DISTRICT VENUE / CLUB</div>
-                        <div style="color: var(--neon-cyan)">🎯 MATCH PREFERENCE: ELECTRONIC MUSIC / DANCE</div>
-                        <span class="accept-link" onclick="toast('Searching frequency synchronized. Initiating haptic radar navigation...')">[ ACCEPT MATCH ]</span>
-                    </div>
+                <form class="auth-form" id="register-form" onsubmit="doRegister(event)">
+                    <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" required>
+                    <input type="password" id="reg-password" placeholder="Password" autocomplete="new-password" required>
+                    <input type="number" id="reg-age" placeholder="Age" min="18" max="99" required>
+                    <select id="reg-gender"><option value="male">Male</option><option value="female">Female</option></select>
+                    <button type="submit" class="auth-btn">Create Account</button>
+                </form>
 
-                    <div class="encounter-card">
-                        <div>🔒 ENCRYPTED MATCH DETECTED</div>
-                        <div>📁 CONTEXT: BUSINESS TRAVEL / LOUNGE</div>
-                        <div style="color: var(--neon-cyan)">🎯 MATCH PREFERENCE: NETWORKING &amp; DINNER</div>
-                        <span class="accept-link" onclick="toast('Searching frequency synchronized. Initiating haptic radar navigation...')">[ ACCEPT MATCH ]</span>
-                    </div>
+                <button id="google-btn" class="auth-btn">
+                    <img src="https://www.google.com/favicon.ico" width="18" alt="Google"> Continue with Google
+                </button>
+            </div>
+        </div>
+
+        <div id="main-app-screen" class="screen">
+            <div id="search-pane" class="search-overlay">
+                <div class="overlay-header">
+                    <div class="overlay-title">[ ENTER GRID COORDINATES / DESTINATION... ]</div>
+                    <input type="text" class="overlay-input-box" value="> Centering Signal . . ." readonly>
+                </div>
+                <div class="shortcut-title">Frequent Encounters</div>
+                <div class="shortcut-list">
+                    <div class="shortcut-row" onclick="selectDestination('Coffee Roasters Trail End')">☕ Coffee Roasters Trail End — 100% Match</div>
+                    <div class="shortcut-row" onclick="selectDestination('District Venue / Club')">🎵 District Venue / Club — Signal Strong</div>
+                    <div class="shortcut-row" onclick="selectDestination('Business Travel / Lounge')">💼 Business Travel / Lounge — 2 Waiting</div>
                 </div>
             </div>
 
-            <div class="coach-node" onclick="toast('Matrix Status: Stable. Proximity tracking algorithms optimal.')">
-                <div class="coach-avatar"></div>
-                <div class="coach-status">AI COACH: ONLINE</div>
+            <div class="hud-header">
+                <div class="header-btn">🔍</div>
+                <div class="header-logo">SPAZZ</div>
+                <div class="header-btn" onclick="logoutGrid()">≡</div>
+            </div>
+            
+            <div class="hud-content">
+                <div class="telemetry-container">
+                    <div class="search-bar-trigger" onclick="toggleSearchOverlay(true)">
+                        Enter Current Destination to map possible encounter
+                    </div>
+
+                    <div class="telemetry-list">
+                        <div class="telemetry-row">🏁 ACTIVE DESTINY WAYPOINT</div>
+                        <div class="telemetry-row" id="active-goal-text">📍 GOAL: CHOOSE A DESTINATION ENTRY</div>
+                        <div class="telemetry-row">🏃 TARGET DISTANCE: 800M (PREVIOUS BEST: 500M)</div>
+                        <div class="telemetry-row">🛰️ SPAZZ SIGNAL: ENCRYPTED &amp; BROADCASTING</div>
+                        <div class="telemetry-row">✨ VICTORY MEETING: ESTIMATED AT TRAIL END</div>
+                        <div class="telemetry-row" style="color: var(--neon-pink); font-weight: bold;">🎯 DESTINATION MATCH: 100%</div>
+                        
+                        <div class="encounter-card">
+                            <div>🔒 ENCRYPTED MATCH DETECTED</div>
+                            <div>📁 CONTEXT: DISTRICT VENUE / CLUB</div>
+                            <div style="color: var(--neon-cyan)">🎯 MATCH PREFERENCE: ELECTRONIC MUSIC / DANCE</div>
+                            <span class="accept-link" onclick="toast('Searching frequency synchronized. Initiating haptic radar navigation...')">[ ACCEPT MATCH ]</span>
+                        </div>
+
+                        <div class="encounter-card">
+                            <div>🔒 ENCRYPTED MATCH DETECTED</div>
+                            <div>📁 CONTEXT: BUSINESS TRAVEL / LOUNGE</div>
+                            <div style="color: var(--neon-cyan)">🎯 MATCH PREFERENCE: NETWORKING &amp; DINNER</div>
+                            <span class="accept-link" onclick="toast('Searching frequency synchronized. Initiating haptic radar navigation...')">[ ACCEPT MATCH ]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="coach-node" onclick="toast('Matrix Status: Stable. Proximity tracking algorithms optimal.')">
+                    <div class="coach-avatar"></div>
+                    <div class="coach-status">AI COACH: ONLINE</div>
+                </div>
+            </div>
+
+            <div class="nav-bar">
+                <div class="nav-item active">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    Home
+                </div>
+                <div class="nav-item" onclick="toast('Inventory system loading... 0 wisps in vault.')">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 12H9v-2h6v2zm4-5H5V8h14v3z"/></svg>
+                    Wisp
+                </div>
+                <div class="nav-item" onclick="toast('Opening Unlocked Grid Networks...')">
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 1.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    Social
+                </div>
+                <div class="nav-item" onclick="toast('Accessing Secure Profile Interface Settings...')">
+                    <img class="nav-profile-pic" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop" alt="Profile">
+                    Profile
+                </div>
             </div>
         </div>
 
-        <div class="nav-bar">
-            <div class="nav-item active">
-                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                Home
-            </div>
-            <div class="nav-item" onclick="toast('Inventory system loading... 0 wisps in vault.')">
-                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 12H9v-2h6v2zm4-5H5V8h14v3z"/></svg>
-                Wisp
-            </div>
-            <div class="nav-item" onclick="toast('Opening Unlocked Grid Networks...')">
-                <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 1.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                Social
-            </div>
-            <div class="nav-item" onclick="toast('Accessing Secure Profile Interface Settings...')">
-                <img class="nav-profile-pic" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop" alt="Profile">
-                Profile
-            </div>
-        </div>
     </div>
-
-</div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
