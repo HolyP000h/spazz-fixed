@@ -259,13 +259,13 @@
             
             <form class="auth-form active" id="login-form" onsubmit="doLogin(event)">
                 <input type="text" id="login-username" placeholder="Username" required>
-                <input type="password" id="login-password" placeholder="Password" required>
+                <input type="password" id="reg-password" placeholder="Password" autocomplete="new-password" required>
                 <button type="submit" class="auth-btn">Enter the Grid</button>
             </form>
 
             <form class="auth-form" id="register-form" onsubmit="doRegister(event)">
                 <input type="text" id="reg-username" placeholder="Choose a username" required>
-                <input type="password" id="reg-password" placeholder="Password" required>
+                <input type="password" id="reg-password" placeholder="Password" autocomplete="new-password" required>
                 <input type="number" id="reg-age" placeholder="Age" min="18" max="99" required>
                 <select id="reg-gender"><option value="male">Male</option><option value="female">Female</option></select>
                 <button type="submit" class="auth-btn">Create Account</button>
