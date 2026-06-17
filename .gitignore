@@ -5,6 +5,8 @@
 .env
 .envrc
 *.log
+.env.txt
+.env*
 
 # 2. Python Environment
 __pycache__/
