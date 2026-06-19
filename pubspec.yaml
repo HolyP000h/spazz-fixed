@@ -1,5 +1,5 @@
 name: spazz
-description: Spazz - Wisp hunting social app
+description: Spazz - Discover and connect with nearby users through location-based interactions. Dating app with a twist, allowing you to find and connect with people in your vicinity. Whether you're looking for new friends or potential romantic connections, Spazz helps you explore your local community and meet like-minded individuals. With features like location-based matching, in-app messaging, and user profiles, Spazz is the perfect platform to discover and connect with people around you. Hunt wisps while you explore your surroundings and connect with others in a fun and interactive way. Spazz is the ultimate app for those who want to meet new people and have fun while doing it. Earn Spazz Coins by hunting wisps and use them to unlock special features and perks within the app. With Spazz, you can turn your everyday adventures into exciting opportunities to connect with others and discover new friendships or romantic connections. Join Spazz today and start exploring your local community in a whole new way! New AI dating coach feature that provides personalized advice and tips to help you navigate the world of dating and relationships. Whether you're new to dating or looking to improve your skills, our AI coach is here to support you every step of the way. With Spazz's AI dating coach, you can get personalized advice on how to create an attractive profile, start conversations, and build meaningful connections with others. The AI coach uses advanced algorithms to analyze your profile and interactions, providing tailored recommendations to help you succeed in the dating world. Whether you're looking for casual dating or a serious relationship, Spazz's AI dating coach can help you achieve your goals and find the right match for you. Join Spazz today and let our AI dating coach guide you on your journey to finding love and connection, and motivates you to get out there and meet new people in your area. With Spazz, you can turn your everyday adventures into exciting opportunities to connect with others and discover new friendships or romantic connections. Spazz is the ultimate app for those who want to meet new people and have fun while doing it, and to stay Spazz-fit by exercising and exploring your surroundings. Whether you're looking for new friends or potential romantic connections, Spazz helps you explore your local community and meet like-minded individuals. With features like location-based matching, in-app messaging, and user profiles, Spazz is the perfect platform to discover and connect with people around you. Join Spazz today and start exploring your local community in a whole new way!
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
 
   # Navigation
-  go_router: ^13.0.0
+  go_router: ^17.3.0
 
   # Networking
   http: ^1.2.0
@@ -23,13 +23,13 @@ dependencies:
   google_maps_flutter: ^2.5.0
 
   # Location
-  geolocator: ^11.0.0
+  geolocator: ^14.0.3
 
   # In-App Purchases (iOS + Android)
   in_app_purchase: ^3.1.0
 
   # Google Sign In
-  google_sign_in: ^6.2.0
+  google_sign_in: ^7.2.0
 
   # Icons
   cupertino_icons: ^1.0.2
@@ -37,7 +37,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

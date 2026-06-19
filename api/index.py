@@ -26,7 +26,7 @@ HOME_BLACKOUT_RADIUS_METERS = 300
 # ── SUPABASE ─────────────────────────────
 # ── SUPABASE ─────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kytmktshrywvxigobsxd.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "sb_publishable_VPsSI1rQd7rrqkqbeNLk6Q_eGATldlk")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "sb_publishable_U09QKkouk1bYdQum8h6Ytg_zyCKRZml")
 
 # Execute and initialize the client engine
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -192,13 +192,18 @@ async def login(req: LoginRequest):
     if not result.data:
         raise HTTPException(401, "Bad credentials")
     user = result.data[0]
-    if user["password_hash"] != hash_password(req.password):
+    # defensively handle unexpected result types to avoid subscript errors
+    if not isinstance(user, dict):
+        raise HTTPException(401, "Bad credentials")
+
+    if user.get("password_hash") != hash_password(req.password):
         raise HTTPException(401, "Bad credentials")
 
     token = make_token(user["id"])
     supabase.table("users").update({"token": token}).eq("id", user["id"]).execute()
 
-    is_admin = user["id"] in ADMIN_IDS or user["username"].lower() == "ben"
+    username = user.get("username")
+    is_admin = user["id"] in ADMIN_IDS or (isinstance(username, str) and username.lower() == "ben")
     return {"token": token, "user_id": user["id"], "username": user["username"], "is_admin": is_admin}
 
 @app.post("/api/location")
@@ -238,19 +243,26 @@ async def update_location(loc: LocationUpdate, auth=Depends(get_current_user)):
     return {"status": "ok", "steps": steps, "calories": calories}
 
 @app.get("/api/users")
-async def get_users(auth=Depends(get_current_user)):
-    is_admin = auth["id"] in ADMIN_IDS or auth["username"].lower() == "ben"
+async def get_users(auth: dict = Depends(get_current_user)):
+    if not isinstance(auth, dict):
+        raise HTTPException(401, "Invalid auth payload")
+
+    auth_id = auth.get("id")
+    auth_username = auth.get("username", "")
+    is_admin = auth_id in ADMIN_IDS or (isinstance(auth_username, str) and auth_username.lower() == "ben")
 
     result = supabase.table("users").select("*").eq("online", True).execute()
-    online_users = result.data or []
+    online_users = result.data if isinstance(result.data, list) else []
 
     # Cleaned: Removed duplicate wisp spawning loop layers to save server resources
 
     entities = []
     for u in online_users:
-        if u["id"] != auth["id"]:
+        if not isinstance(u, dict):
+            continue
+        if u.get("id") != auth_id:
             entities.append({
-                "id": u["id"], "username": u["username"], "type": "user",
+                "id": u.get("id"), "username": u.get("username"), "type": "user",
                 "lat": u.get("lat", 0), "lon": u.get("lon", 0),
                 "gender": u.get("gender", "other"), "age": u.get("age", 25),
                 "is_premium": u.get("is_premium", False)
@@ -262,8 +274,8 @@ async def get_users(auth=Depends(get_current_user)):
     return {
         "entities": entities,
         "me": {
-            "id": auth["id"],
-            "username": auth["username"],
+            "id": auth_id,
+            "username": auth_username,
             "steps": auth.get("steps", 0),
             "calories": auth.get("calories", 0),
             "distance_m": auth.get("distance_m", 0),
@@ -278,9 +290,11 @@ async def get_users(auth=Depends(get_current_user)):
 
 @app.get("/api/me")
 async def get_me(auth=Depends(get_current_user)):
+    if not isinstance(auth, dict):
+        raise HTTPException(401, "Invalid user")
     return {
-        "id": auth["id"],
-        "username": auth["username"],
+        "id": auth.get("id"),
+        "username": auth.get("username", ""),
         "steps": auth.get("steps", 0),
         "calories": auth.get("calories", 0),
         "distance_m": auth.get("distance_m", 0),
@@ -292,14 +306,23 @@ async def get_me(auth=Depends(get_current_user)):
 
 @app.get("/api/leaderboard")
 async def leaderboard(auth=Depends(get_current_user)):
+    if not isinstance(auth, dict):
+        raise HTTPException(401, "Invalid user")
     result = supabase.table("users").select("id,username,xp,steps,wisp_coins").order("xp", desc=True).limit(20).execute()
-    users = result.data or []
-    return {"leaderboard": [
-        {"rank": i+1, "username": u["username"], "wisps": u.get("xp", 0),
-         "steps": u.get("steps", 0), "credits": u.get("wisp_coins", 0),
-         "is_me": u["id"] == auth["id"]}
-        for i, u in enumerate(users)
-    ]}
+    users = result.data if isinstance(result.data, list) else []
+    leaderboard_items = []
+    for u in users:
+        if not isinstance(u, dict):
+            continue
+        leaderboard_items.append({
+            "rank": len(leaderboard_items) + 1,
+            "username": u.get("username", ""),
+            "wisps": u.get("xp", 0),
+            "steps": u.get("steps", 0),
+            "credits": u.get("wisp_coins", 0),
+            "is_me": u.get("id") == auth.get("id"),
+        })
+    return {"leaderboard": leaderboard_items}
 
 @app.post("/api/collect/{target_id}")
 async def collect_target(target_id: str, auth=Depends(get_current_user)):
@@ -340,7 +363,15 @@ async def get_inbox(auth=Depends(get_current_user)):
     all_msgs = sent + received
     convos = {}
     for m in all_msgs:
-        partner_id = m["to_user_id"] if m["user_id"] == auth["id"] else m["user_id"]
+        # Guard against unexpected types (None, bool, etc.) and ensure dict access is safe
+        if not isinstance(m, dict):
+            continue
+        user_id = m.get("user_id")
+        to_user_id = m.get("to_user_id")
+        # Determine conversation partner; skip if neither id present
+        partner_id = to_user_id if user_id == auth.get("id") else user_id
+        if partner_id is None:
+            continue
         if partner_id not in convos:
             convos[partner_id] = {"partner_id": partner_id, "messages": []}
         convos[partner_id]["messages"].append(m)
@@ -404,11 +435,16 @@ PREMIUM_COACH_TIPS = {
 @app.get("/api/shop")
 async def get_shop(auth=Depends(get_current_user)):
     inv_result = supabase.table("inventory").select("*").eq("user_id", auth["id"]).execute()
-    owned_ids = [r["item_name"] for r in (inv_result.data or [])]
+    owned_ids = [r.get("item_name") for r in (inv_result.data or []) if isinstance(r, dict)]
     equipped_result = supabase.table("inventory").select("*").eq("user_id", auth["id"]).eq("item_type", "equipped").execute()
     equipped = {}
     for r in (equipped_result.data or []):
-        equipped[r.get("item_category", "")] = r["item_name"]
+        if not isinstance(r, dict):
+            continue
+        item_name = r.get("item_name")
+        if item_name is None:
+            continue
+        equipped[r.get("item_category", "")] = item_name
 
     items = []
     for item in SHOP_ITEMS:
@@ -425,7 +461,7 @@ async def buy_item(item_id: str, auth=Depends(get_current_user)):
         raise HTTPException(404, "Item not found")
 
     inv_result = supabase.table("inventory").select("item_name").eq("user_id", auth["id"]).execute()
-    owned_ids = [r["item_name"] for r in (inv_result.data or [])]
+    owned_ids = [r.get("item_name") for r in (inv_result.data or []) if isinstance(r, dict)]
     if item_id in owned_ids:
         raise HTTPException(400, "Already owned")
 
@@ -433,7 +469,11 @@ async def buy_item(item_id: str, auth=Depends(get_current_user)):
         raise HTTPException(403, "Premium required")
 
     user_result = supabase.table("users").select("wisp_coins").eq("id", auth["id"]).execute()
-    coins = user_result.data[0]["wisp_coins"] if user_result.data else 0
+    coins = 0
+    if isinstance(user_result.data, list) and user_result.data:
+        first_row = user_result.data[0]
+        if isinstance(first_row, dict):
+            coins = first_row.get("wisp_coins", 0) or 0
     if coins < item["price"]:
         raise HTTPException(400, f"Need {item['price']} coins, you have {coins}")
 
@@ -470,17 +510,24 @@ async def equip_item(item_id: str, auth=Depends(get_current_user)):
 @app.post("/api/premium/subscribe")
 async def subscribe_premium(auth=Depends(get_current_user)):
     user_result = supabase.table("users").select("wisp_coins,is_premium").eq("id", auth["id"]).execute()
-    if not user_result.data:
+    if not user_result.data or not isinstance(user_result.data, list) or not user_result.data:
         raise HTTPException(404, "User not found")
     user = user_result.data[0]
+    if not isinstance(user, dict):
+        raise HTTPException(404, "User not found")
     SUBSCRIPTION_PRICE = 299
-    if user["wisp_coins"] < SUBSCRIPTION_PRICE:
+    coins = user.get("wisp_coins")
+    try:
+        coins = int(coins)
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Invalid coin balance")
+    if coins < SUBSCRIPTION_PRICE:
         raise HTTPException(400, f"Need {SUBSCRIPTION_PRICE} coins")
     supabase.table("users").update({
-        "wisp_coins": user["wisp_coins"] - SUBSCRIPTION_PRICE,
+        "wisp_coins": coins - SUBSCRIPTION_PRICE,
         "is_premium": True
     }).eq("id", auth["id"]).execute()
-    return {"status": "subscribed", "new_balance": user["wisp_coins"] - SUBSCRIPTION_PRICE}
+    return {"status": "subscribed", "new_balance": coins - SUBSCRIPTION_PRICE}
 
 @app.get("/api/premium/tips")
 async def premium_tips(auth=Depends(get_current_user)):
@@ -661,7 +708,9 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
 
     nearby_users = []
     for u in (all_users_res.data or []):
-        if u["id"] == auth["id"]:
+        if not isinstance(u, dict):
+            continue
+        if u.get("id") == auth["id"]:
             continue
         if not u.get("lat") or not u.get("lon"):
             continue
