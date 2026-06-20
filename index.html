@@ -57,6 +57,10 @@
       text-decoration: none;
       border-radius: 100px;
       box-shadow: 0 0 32px rgba(0,255,255,0.4);
+      transition: transform 0.2s ease-in-out;
+    }
+    .cta:hover {
+      transform: scale(1.05);
     }
     .status {
       margin-top: 1.5rem;
@@ -65,14 +69,89 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
     }
+
+    /* --- FLOATING MAP AVATAR CONFIGURATION --- */
+    .map-avatar-node {
+      position: absolute;
+      bottom: -110px; /* Positions it structurally matching the mock lower left map frame */
+      left: -20px;
+      z-index: 99;
+      cursor: pointer;
+      transition: transform 0.2s ease-in-out;
+    }
+    .map-avatar-node:hover {
+      transform: scale(1.15);
+    }
+    .map-avatar-glow {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #0a0512;
+      border: 2px solid #ff00ff;
+      box-shadow: 0 0 15px #ff00ff, inset 0 0 8px rgba(255, 0, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cyber-face {
+      width: 26px;
+      height: 26px;
+      fill: #ff00ff;
+      filter: drop-shadow(0 0 4px #ff00ff);
+    }
+
+    /* --- NOTIFICATION INTERFACE MATRIX --- */
+    #toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 5, 18, 0.95);
+      border: 1px solid #ff00ff;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      pointer-events: none;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+    }
+    #toast.show { opacity: 1; }
   </style>
 </head>
 <body>
+
+  <div id="toast"></div>
+
   <div class="container">
     <div class="logo">⚡ Spazz</div>
     <p class="tagline">Move. Discover. Connect.</p>
-    <a href="#" class="cta">Enter the Grid</a>
+    
+    <a href="#" class="cta" onclick="toast('Initializing interface nodes... Synchronizing network matrix.')">Enter the Grid</a>
+    
+    <div class="map-avatar-node" onclick="event.stopPropagation(); toast('Gemini Sync: Scanning tracking arrays for neighboring user telemetry...')">
+      <div class="map-avatar-glow">
+        <svg viewBox="0 0 24 24" class="cyber-face">
+          <path d="M12 2c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l2.79-2.79C9.93 18.63 10.93 19 12 19c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-.83 0-1.5-.67-1.5-1.5S11.17 14 12 14s1.5.67 1.5 1.5S12.83 17 12 17zm3.5-6.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-7 0C7.67 10.5 7 9.83 7 9s.67-1.5 1.5-1.5S10 8.17 10 9s-.67 1.5-1.5 1.5z"/>
+        </svg>
+      </div>
+    </div>
+
     <p class="status">Signal encrypted · Privacy first · v2.0</p>
   </div>
+
+  <script>
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3500);
+    }
+  </script>
 </body>
 </html>
