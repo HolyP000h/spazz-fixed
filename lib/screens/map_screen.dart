@@ -254,7 +254,7 @@ class _MapScreenState extends State<MapScreen> {
         circles.add(Circle(
           circleId: CircleId('hotspot_${hotspot['id']}'),
           center: LatLng(hotspot['lat'], hotspot['lng']),
-          radius: 50 + (intensity * 10).clamp(0, 200),
+          radius: (50 + (intensity * 10).clamp(0, 200)).toDouble(),
           fillColor: Color.fromRGBO(255, (50 - intensity * 5).clamp(0, 50).toInt(), 0,
               (0.1 + intensity * 0.05).clamp(0.1, 0.5)),
           strokeColor: Colors.transparent,
