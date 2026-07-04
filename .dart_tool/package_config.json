@@ -93,9 +93,9 @@
     },
     {
       "name": "flutter",
-      "rootUri": "file:///C:/Users/Ben33/flutter/packages/flutter",
+      "rootUri": "file:///C:/Users/Ben33/src/flutter/packages/flutter",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.10"
     },
     {
       "name": "flutter_lints",
@@ -111,15 +111,15 @@
     },
     {
       "name": "flutter_test",
-      "rootUri": "file:///C:/Users/Ben33/flutter/packages/flutter_test",
+      "rootUri": "file:///C:/Users/Ben33/src/flutter/packages/flutter_test",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.10"
     },
     {
       "name": "flutter_web_plugins",
-      "rootUri": "file:///C:/Users/Ben33/flutter/packages/flutter_web_plugins",
+      "rootUri": "file:///C:/Users/Ben33/src/flutter/packages/flutter_web_plugins",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.10"
     },
     {
       "name": "geoclue",
@@ -195,13 +195,13 @@
     },
     {
       "name": "google_maps_flutter_android",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/google_maps_flutter_android-2.19.10",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/google_maps_flutter_android-2.19.12",
       "packageUri": "lib/",
-      "languageVersion": "3.10"
+      "languageVersion": "3.12"
     },
     {
       "name": "google_maps_flutter_ios",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/google_maps_flutter_ios-2.18.3",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/google_maps_flutter_ios-2.18.4",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -225,9 +225,9 @@
     },
     {
       "name": "google_sign_in_android",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/google_sign_in_android-7.2.11",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/google_sign_in_android-7.2.14",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.12"
     },
     {
       "name": "google_sign_in_ios",
@@ -279,9 +279,9 @@
     },
     {
       "name": "in_app_purchase_android",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/in_app_purchase_android-0.5.0",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/in_app_purchase_android-0.5.1",
       "packageUri": "lib/",
-      "languageVersion": "3.10"
+      "languageVersion": "3.12"
     },
     {
       "name": "in_app_purchase_platform_interface",
@@ -291,7 +291,7 @@
     },
     {
       "name": "in_app_purchase_storekit",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/in_app_purchase_storekit-0.4.10",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/in_app_purchase_storekit-0.4.10+1",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -345,13 +345,13 @@
     },
     {
       "name": "meta",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.17.0",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.18.0",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
     {
       "name": "package_info_plus",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/package_info_plus-10.1.0",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/package_info_plus-10.2.0",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -369,9 +369,9 @@
     },
     {
       "name": "path_provider_linux",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_linux-2.2.1",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_linux-2.2.2",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.10"
     },
     {
       "name": "path_provider_platform_interface",
@@ -417,9 +417,9 @@
     },
     {
       "name": "shared_preferences_android",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.23",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.26",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.12"
     },
     {
       "name": "shared_preferences_foundation",
@@ -453,9 +453,9 @@
     },
     {
       "name": "sky_engine",
-      "rootUri": "file:///C:/Users/Ben33/flutter/bin/cache/pkg/sky_engine",
+      "rootUri": "file:///C:/Users/Ben33/src/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.10"
     },
     {
       "name": "source_span",
@@ -495,7 +495,7 @@
     },
     {
       "name": "test_api",
-      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.10",
+      "rootUri": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.11",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
@@ -548,15 +548,15 @@
       "languageVersion": "3.8"
     },
     {
-      "name": "spazz",
+      "name": "spazz_fixed",
       "rootUri": "../",
       "packageUri": "lib/",
-      "languageVersion": "3.0"
+      "languageVersion": "3.10"
     }
   ],
   "generator": "pub",
-  "generatorVersion": "3.11.5",
-  "flutterRoot": "file:///C:/Users/Ben33/flutter",
-  "flutterVersion": "3.41.7",
+  "generatorVersion": "3.12.2",
+  "flutterRoot": "file:///C:/Users/Ben33/src/flutter",
+  "flutterVersion": "3.44.4",
   "pubCache": "file:///C:/Users/Ben33/AppData/Local/Pub/Cache"
 }

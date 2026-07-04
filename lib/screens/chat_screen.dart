@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/auth_service.dart';
+import 'package:spazz_fixed/services/api_service.dart';
+import 'package:spazz_fixed/services/auth_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
