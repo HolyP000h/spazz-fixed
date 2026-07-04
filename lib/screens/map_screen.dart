@@ -19,9 +19,9 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   Position? _myPosition;
-  // loading state no longer used
-  bool _isPremium = false;
-  String _token = '';
+  bool _loading = false; // Set to true while fetching location and nearby data, false when done
+  bool _isPremium = false; // Set to true if the user has a premium subscription, false otherwise
+  String _token = ''; 
   String _userId = '';
   String _username = '';
 
@@ -60,6 +60,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _init() async {
+    setState(() => _loading = true); // Set to true while fetching
+  // ... any other setup code you have there
+  await _fetchNearby();
+  setState(() => _loading = false); // Turns off when done
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('token') ?? '';
     _userId = prefs.getString('user_id') ?? '';
