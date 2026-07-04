@@ -19,7 +19,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   Position? _myPosition;
-  bool _loading = true;
+  // loading state no longer used
   bool _isPremium = false;
   String _token = '';
   String _userId = '';
@@ -106,7 +106,9 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       setState(() => _myPosition = pos);
       await _pingLocation();
