@@ -374,15 +374,17 @@ class _MapScreenState extends State<MapScreen> {
       body: Stack(
         children: [
           // ── MAP ──────────────────────────────────────────────────
-          _myPosition == null
-              ? const Center(
+          (_myPosition == null || _loading)
+              ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: Color(0xFF7C3AED)),
-                      SizedBox(height: 16),
-                      Text('Getting your location...',
-                          style: TextStyle(color: Color(0xFF888899))),
+                      const CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                      const SizedBox(height: 16),
+                      Text(
+                        _loading ? 'Loading nearby players...' : 'Getting your location...',
+                        style: const TextStyle(color: Color(0xFF888899)),
+                      ),
                     ],
                   ),
                 )
