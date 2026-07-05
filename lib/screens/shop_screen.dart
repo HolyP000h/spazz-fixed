@@ -202,8 +202,11 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _buy(Map<String, dynamic> item) async {
+    if (!mounted) return;
+    final currentContext = context;
+
     if (_coins < item['cost']) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(currentContext).showSnackBar(
         const SnackBar(
           content: Text('Not enough Wisp Coins! Go hunt more wisps 🌀'),
           backgroundColor: Color(0xFFEF4444),
@@ -213,7 +216,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
     }
 
     final confirmed = await showDialog<bool>(
-      context: context,
+      context: currentContext,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E2E),
         title: Text('Buy ${item['name']}?',
@@ -264,7 +267,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     HapticFeedback.heavyImpact();
 
@@ -283,7 +286,8 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
       _owned.add(item['id']);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+    ScaffoldMessenger.of(currentContext).showSnackBar(
       SnackBar(
         content: Text('${item['emoji']} ${item['name']} unlocked!'),
         backgroundColor: const Color(0xFF7C3AED),
@@ -292,6 +296,9 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _equipSkin(Map<String, dynamic> skin) async {
+    if (!mounted) return;
+    final currentContext = context;
+
     HapticFeedback.mediumImpact();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('active_skin', skin['id']);
@@ -307,7 +314,8 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
       );
     } catch (_) {}
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+    ScaffoldMessenger.of(currentContext).showSnackBar(
       SnackBar(
         content: Text('${skin['emoji']} ${skin['name']} equipped! Others will feel your presence.'),
         backgroundColor: Color(skin['rarityColor'] as int),

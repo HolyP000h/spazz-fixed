@@ -161,10 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                icon: Image.network(
-                  'https://www.google.com/favicon.ico',
-                  width: 20, height: 20,
-                ),
+                icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 22),
                 label: const Text('Continue with Google'),
               ),
             ],
