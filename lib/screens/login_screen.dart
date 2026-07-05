@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../services/auth_service.dart'; // This relative path is all you need!
+import '../services/auth_service.dart';
+import '../design/spazz_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,42 +56,37 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: SpazzTheme.bgPrimary,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing24, vertical: SpazzTheme.spacing40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: SpazzTheme.spacing40),
               // Logo
               Center(
                 child: Container(
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF06B6D4)],
-                    ),
+                    borderRadius: BorderRadius.circular(SpazzTheme.radiusXL),
+                    gradient: SpazzTheme.gradientPrimary,
                   ),
                   child: const Icon(Icons.bolt, size: 40, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: SpazzTheme.spacing20),
               const Center(
-                child: Text('SPAZZ', style: TextStyle(
-                  fontSize: 28, fontWeight: FontWeight.w800,
-                  color: Colors.white, letterSpacing: 4,
-                )),
+                child: Text('SPAZZ', style: SpazzTheme.heading2),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: SpazzTheme.spacing48),
 
               // Tab switcher
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E2E),
-                  borderRadius: BorderRadius.circular(12),
+                  color: SpazzTheme.bgTertiary,
+                  borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
                 ),
                 padding: const EdgeInsets.all(4),
                 child: Row(
@@ -100,37 +96,37 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: SpazzTheme.spacing24),
 
               // Username
               TextField(
                 controller: _usernameCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: SpazzTheme.textPrimary),
                 decoration: const InputDecoration(
                   hintText: 'Username',
-                  prefixIcon: Icon(Icons.person_outline, color: Color(0xFF666680)),
+                  prefixIcon: Icon(Icons.person_outline, color: SpazzTheme.textTertiary),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: SpazzTheme.spacing12),
 
               // Password
               TextField(
                 controller: _passwordCtrl,
                 obscureText: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: SpazzTheme.textPrimary),
                 decoration: const InputDecoration(
                   hintText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF666680)),
+                  prefixIcon: Icon(Icons.lock_outline, color: SpazzTheme.textTertiary),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: SpazzTheme.spacing8),
 
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+                  padding: const EdgeInsets.only(bottom: SpazzTheme.spacing8),
+                  child: Text(_error!, style: const TextStyle(color: SpazzTheme.errorRed, fontSize: 13)),
                 ),
-              const SizedBox(height: 8),
+              const SizedBox(height: SpazzTheme.spacing8),
 
               // Submit button
               ElevatedButton(
@@ -139,27 +135,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text(_isLogin ? 'Login' : 'Create Account'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: SpazzTheme.spacing20),
 
               // Divider
               Row(children: [
-                const Expanded(child: Divider(color: Color(0xFF2A2A3A))),
+                const Expanded(child: Divider(color: SpazzTheme.borderDark)),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('or', style: TextStyle(color: Color(0xFF666680))),
+                  padding: EdgeInsets.symmetric(horizontal: SpazzTheme.spacing12),
+                  child: Text('or', style: TextStyle(color: SpazzTheme.textTertiary)),
                 ),
-                const Expanded(child: Divider(color: Color(0xFF2A2A3A))),
+                const Expanded(child: Divider(color: SpazzTheme.borderDark)),
               ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: SpazzTheme.spacing20),
 
               // Google button
               OutlinedButton.icon(
                 onPressed: _loading ? null : _googleSignIn,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0xFF2A2A3A)),
+                  foregroundColor: SpazzTheme.textPrimary,
+                  side: const BorderSide(color: SpazzTheme.borderDark),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium)),
                 ),
                 icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 22),
                 label: const Text('Continue with Google'),
@@ -177,16 +173,16 @@ class _LoginScreenState extends State<LoginScreen> {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing8),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF7C3AED) : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            color: active ? SpazzTheme.accentPurple : Colors.transparent,
+            borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: active ? Colors.white : const Color(0xFF666680),
+              color: active ? SpazzTheme.textPrimary : SpazzTheme.textTertiary,
               fontWeight: FontWeight.w600,
             ),
           ),

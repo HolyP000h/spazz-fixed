@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../design/spazz_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,23 +38,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: SpazzTheme.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF13131A),
-        title: const Text('Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        backgroundColor: SpazzTheme.bgSecondary,
+        title: const Text('Profile', style: TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w700)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Color(0xFF666680)),
+            icon: const Icon(Icons.logout, color: SpazzTheme.textTertiary),
             onPressed: _logout,
           ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: SpazzTheme.accentPurple))
           : _user == null
-              ? const Center(child: Text('Failed to load', style: TextStyle(color: Colors.white)))
+              ? const Center(child: Text('Failed to load', style: TextStyle(color: SpazzTheme.textPrimary)))
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(SpazzTheme.spacing24),
                   child: Column(
                     children: [
                       // Avatar
@@ -61,9 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: 90, height: 90,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF7C3AED), Color(0xFF06B6D4)],
-                          ),
+                          gradient: SpazzTheme.gradientPrimary,
                         ),
                         child: Center(
                           child: Text(
@@ -72,13 +71,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: SpazzTheme.spacing16),
                       Text(_user!['username'] ?? '', style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white,
+                        fontSize: 22, fontWeight: FontWeight.w700, color: SpazzTheme.textPrimary,
                       )),
                       if (_user!['is_premium'] == true)
                         Container(
-                          margin: const EdgeInsets.only(top: 6),
+                          margin: const EdgeInsets.only(top: SpazzTheme.spacing6),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]),
@@ -86,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           child: const Text('PREMIUM', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black)),
                         ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: SpazzTheme.spacing32),
                       // Stats
                       _statsGrid(),
                     ],
@@ -107,28 +106,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.4,
+        crossAxisCount: 2, crossAxisSpacing: SpazzTheme.spacing12, mainAxisSpacing: SpazzTheme.spacing12, childAspectRatio: 1.4,
       ),
       itemCount: stats.length,
       itemBuilder: (_, i) {
         final s = stats[i];
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF13131A),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF1E1E2E)),
+            color: SpazzTheme.bgSecondary,
+            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
+            border: Border.all(color: SpazzTheme.borderDark),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(SpazzTheme.spacing16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(s['icon'] as IconData, color: const Color(0xFF7C3AED), size: 22),
+              Icon(s['icon'] as IconData, color: SpazzTheme.accentPurple, size: 22),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(s['value'] as String, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
-                  Text(s['label'] as String, style: const TextStyle(fontSize: 12, color: Color(0xFF666680))),
+                  Text(s['value'] as String, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: SpazzTheme.textPrimary)),
+                  Text(s['label'] as String, style: const TextStyle(fontSize: 12, color: SpazzTheme.textTertiary)),
                 ],
               ),
             ],

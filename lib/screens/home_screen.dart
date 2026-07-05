@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
+import '../design/spazz_theme.dart';
 import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'shop_screen.dart';
@@ -77,16 +79,16 @@ class _HomeScreenState extends State<HomeScreen> {
       body: screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF13131A),
-          border: Border(top: BorderSide(color: Color(0xFF1E1E2E))),
+          color: SpazzTheme.bgSecondary,
+          border: Border(top: BorderSide(color: SpazzTheme.borderDark)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: const Color(0xFF7C3AED),
-          unselectedItemColor: const Color(0xFF444460),
+          selectedItemColor: SpazzTheme.accentPurple,
+          unselectedItemColor: SpazzTheme.textTertiary,
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
@@ -126,13 +128,13 @@ class _DashboardTab extends StatelessWidget {
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: () async => onRefresh(),
-        color: const Color(0xFF7C3AED),
-        backgroundColor: const Color(0xFF13131A),
+        color: SpazzTheme.accentPurple,
+        backgroundColor: SpazzTheme.bgSecondary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(SpazzTheme.spacing16),
           child: loading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+              ? const Center(child: CircularProgressIndicator(color: SpazzTheme.accentPurple))
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -144,29 +146,27 @@ class _DashboardTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Hey, $username 👋',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold)),
+                                style: SpazzTheme.heading3.copyWith(
+                                    color: SpazzTheme.textPrimary)),
                             const Text('Go find some wisps!',
-                                style: TextStyle(color: Color(0xFF888899), fontSize: 14)),
+                                style: TextStyle(color: SpazzTheme.textSecondary, fontSize: 14)),
                           ],
                         ),
                         // Wisp coin badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing12, vertical: SpazzTheme.spacing8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E2E),
+                            color: SpazzTheme.bgTertiary,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFF7C3AED)),
+                            border: Border.all(color: SpazzTheme.accentPurple),
                           ),
                           child: Row(
                             children: [
                               const Text('✨', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: SpazzTheme.spacing4),
                               Text('$wispCoins',
                                   style: const TextStyle(
-                                      color: Colors.white,
+                                      color: SpazzTheme.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16)),
                             ],
@@ -174,14 +174,14 @@ class _DashboardTab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: SpazzTheme.spacing20),
 
                     // Level + XP bar
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(SpazzTheme.spacing16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E2E),
-                        borderRadius: BorderRadius.circular(16),
+                        color: SpazzTheme.bgTertiary,
+                        borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,68 +191,68 @@ class _DashboardTab extends StatelessWidget {
                             children: [
                               Text('Level $level',
                                   style: const TextStyle(
-                                      color: Colors.white,
+                                      color: SpazzTheme.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16)),
                               Text('$xp XP',
-                                  style: const TextStyle(color: Color(0xFF7C3AED), fontSize: 14)),
+                                  style: const TextStyle(color: SpazzTheme.accentPurple, fontSize: 14)),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: SpazzTheme.spacing8),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(SpazzTheme.radiusSmall),
                             child: LinearProgressIndicator(
                               value: xpProgress,
-                              backgroundColor: const Color(0xFF13131A),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7C3AED)),
+                              backgroundColor: SpazzTheme.bgPrimary,
+                              valueColor: const AlwaysStoppedAnimation<Color>(SpazzTheme.accentPurple),
                               minHeight: 8,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: SpazzTheme.spacing4),
                           Text('${((1 - xpProgress) * 100).toInt()} XP to next level',
-                              style: const TextStyle(color: Color(0xFF888899), fontSize: 12)),
+                              style: const TextStyle(color: SpazzTheme.textSecondary, fontSize: 12)),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: SpazzTheme.spacing16),
 
                     // Stats row
                     Row(
                       children: [
                         _StatCard(icon: '👟', label: 'Steps', value: '$steps'),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: SpazzTheme.spacing12),
                         _StatCard(icon: '🔥', label: 'Calories', value: calories),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: SpazzTheme.spacing12),
                         _StatCard(icon: '✨', label: 'Wisps', value: '${userData['wisps_collected'] ?? 0}'),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: SpazzTheme.spacing20),
 
                     // Hunt button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () => context.go('/hunt'),
                         icon: const Icon(Icons.radar, color: Colors.white),
                         label: const Text('Start Hunting',
                             style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7C3AED),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          backgroundColor: SpazzTheme.accentPurple,
+                          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: SpazzTheme.spacing20),
 
                     // Leaderboard
                     const Text('🏆 Leaderboard',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
+                        style: TextStyle(color: SpazzTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: SpazzTheme.spacing12),
                     if (leaderboard.isEmpty)
                       const Center(
                         child: Text('No hunters yet — be the first!',
-                            style: TextStyle(color: Color(0xFF888899))),
+                            style: TextStyle(color: SpazzTheme.textSecondary)),
                       )
                     else
                       ...leaderboard.asMap().entries.map((entry) {
@@ -261,27 +261,27 @@ class _DashboardTab extends StatelessWidget {
                         final medals = ['🥇', '🥈', '🥉'];
                         final medal = i < 3 ? medals[i] : '${i + 1}.';
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          margin: const EdgeInsets.only(bottom: SpazzTheme.spacing8),
+                          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing16, vertical: SpazzTheme.spacing12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E2E),
-                            borderRadius: BorderRadius.circular(12),
+                            color: SpazzTheme.bgTertiary,
+                            borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
                           ),
                           child: Row(
                             children: [
                               Text(medal, style: const TextStyle(fontSize: 20)),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: SpazzTheme.spacing12),
                               Expanded(
                                 child: Text(player['username'] ?? '',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                    style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w600)),
                               ),
                               Text('${player['xp'] ?? 0} XP',
-                                  style: const TextStyle(color: Color(0xFF7C3AED))),
+                                  style: const TextStyle(color: SpazzTheme.accentPurple)),
                             ],
                           ),
                         );
                       }),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: SpazzTheme.spacing20),
                   ],
                 ),
         ),
@@ -301,19 +301,19 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(SpazzTheme.spacing14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E2E),
-          borderRadius: BorderRadius.circular(14),
+          color: SpazzTheme.bgTertiary,
+          borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
         ),
         child: Column(
           children: [
             Text(icon, style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 6),
+            const SizedBox(height: SpazzTheme.spacing6),
             Text(value,
                 style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-            Text(label, style: const TextStyle(color: Color(0xFF888899), fontSize: 12)),
+                    color: SpazzTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(label, style: const TextStyle(color: SpazzTheme.textSecondary, fontSize: 12)),
           ],
         ),
       ),

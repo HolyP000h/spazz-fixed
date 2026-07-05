@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../design/spazz_theme.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -209,7 +210,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
       ScaffoldMessenger.of(currentContext).showSnackBar(
         const SnackBar(
           content: Text('Not enough Wisp Coins! Go hunt more wisps 🌀'),
-          backgroundColor: Color(0xFFEF4444),
+          backgroundColor: SpazzTheme.errorRed,
         ),
       );
       return;
@@ -218,37 +219,37 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
     final confirmed = await showDialog<bool>(
       context: currentContext,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E2E),
+        backgroundColor: SpazzTheme.bgTertiary,
         title: Text('Buy ${item['name']}?',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(item['emoji'], style: const TextStyle(fontSize: 48)),
-            const SizedBox(height: 12),
+            const SizedBox(height: SpazzTheme.spacing12),
             Text(item['description'] ?? '',
-                style: const TextStyle(color: Color(0xFF888899)), textAlign: TextAlign.center),
+                style: const TextStyle(color: SpazzTheme.textSecondary), textAlign: TextAlign.center),
             if (item['effect'] != null) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: SpazzTheme.spacing10),
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(SpazzTheme.spacing10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13131A),
-                  borderRadius: BorderRadius.circular(8),
+                  color: SpazzTheme.bgPrimary,
+                  borderRadius: BorderRadius.circular(SpazzTheme.radiusSmall),
                 ),
                 child: Text('✨ ${item['effect']}',
-                    style: const TextStyle(color: Color(0xFF7C3AED), fontSize: 12),
+                    style: const TextStyle(color: SpazzTheme.accentPurple, fontSize: 12),
                     textAlign: TextAlign.center),
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: SpazzTheme.spacing12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('✨ ', style: TextStyle(fontSize: 16)),
                 Text('${item['cost']} Wisp Coins',
                     style: const TextStyle(
-                        color: Color(0xFF7C3AED), fontWeight: FontWeight.bold, fontSize: 16)),
+                        color: SpazzTheme.accentPurple, fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
           ],
@@ -256,11 +257,11 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF888899))),
+            child: const Text('Cancel', style: TextStyle(color: SpazzTheme.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C3AED)),
+            style: ElevatedButton.styleFrom(backgroundColor: SpazzTheme.accentPurple),
             child: const Text('Buy', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -326,26 +327,26 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: SpazzTheme.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF13131A),
-        title: const Text('Shop', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        backgroundColor: SpazzTheme.bgSecondary,
+        title: const Text('Shop', style: TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w700)),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: SpazzTheme.spacing16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing12, vertical: SpazzTheme.spacing6),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E2E),
+                color: SpazzTheme.bgTertiary,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF7C3AED)),
+                border: Border.all(color: SpazzTheme.accentPurple),
               ),
               child: Row(
                 children: [
                   const Text('✨', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: SpazzTheme.spacing4),
                   Text('$_coins',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -353,9 +354,9 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF7C3AED),
-          labelColor: const Color(0xFF7C3AED),
-          unselectedLabelColor: const Color(0xFF888899),
+          indicatorColor: SpazzTheme.accentPurple,
+          labelColor: SpazzTheme.accentPurple,
+          unselectedLabelColor: SpazzTheme.textSecondary,
           tabs: const [
             Tab(text: '⚡ Boss Skins'),
             Tab(text: '🔊 Pings'),
@@ -364,7 +365,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+          ? const Center(child: CircularProgressIndicator(color: SpazzTheme.accentPurple))
           : TabBarView(
               controller: _tabController,
               children: [

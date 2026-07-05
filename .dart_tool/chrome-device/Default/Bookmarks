@@ -1,0 +1,138 @@
+{
+   "checksum": "e1b984ca045e214d70dbd48d1c2363e8",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13423610546816222",
+            "date_last_used": "0",
+            "guid": "fb2f0a86-f00e-43a3-bff0-cbebbda62efe",
+            "id": "10",
+            "name": "Million Free Games",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://millionfreegames.com/",
+            "visit_count": 1
+         }, {
+            "date_added": "13423610546817233",
+            "date_last_used": "0",
+            "guid": "b81ee35c-597b-4cd2-8996-208d0b8e1f60",
+            "id": "11",
+            "name": "New Tab Theme Builder",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://newtabthemebuilder.com/",
+            "visit_count": 1
+         }, {
+            "date_added": "13427449186739204",
+            "date_last_used": "0",
+            "guid": "6dec4b49-501f-4856-a3bc-e1a32562bae4",
+            "id": "12",
+            "name": "Reading mode",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "read://https_www.w3schools.com/?url=https%3A%2F%2Fwww.w3schools.com%2Fhtml%2Fdefault.asp",
+            "visit_count": 1
+         }, {
+            "date_added": "13427449198709440",
+            "date_last_used": "0",
+            "guid": "e0da55ac-ec87-439e-a379-c7aaa2b16edb",
+            "id": "13",
+            "name": "Reading mode",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "read://https_www.w3schools.com/?url=https%3A%2F%2Fwww.w3schools.com%2Fhtml%2Fdefault.asp",
+            "visit_count": 0
+         }, {
+            "children": [  ],
+            "date_added": "13427449206524063",
+            "date_last_used": "0",
+            "date_modified": "13427449206524063",
+            "guid": "d9ec7274-a270-4c0e-86c2-01cc6ca6c152",
+            "id": "14",
+            "name": "Code School",
+            "source": "unknown",
+            "type": "folder"
+         }, {
+            "date_added": "13427710886423736",
+            "date_last_used": "0",
+            "guid": "3b5275e5-a9ef-46bf-a8da-f4be64833067",
+            "id": "9",
+            "name": "Lenovo Support",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://support.lenovo.com/",
+            "visit_count": 0
+         }, {
+            "date_added": "13427710886423377",
+            "date_last_used": "0",
+            "guid": "d9703883-9275-4b95-9102-b4dbcccc506f",
+            "id": "8",
+            "name": "Lenovo",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.lenovo.com/",
+            "visit_count": 0
+         }, {
+            "date_added": "13427710886422903",
+            "date_last_used": "0",
+            "guid": "0f54040b-abcd-45a6-a40a-c634fd0ecc5b",
+            "id": "7",
+            "name": "McAfee",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://consroute.mcafee.com/app?csrc=browserfav&affid=714&clicksrc=browserfav",
+            "visit_count": 0
+         } ],
+         "date_added": "13427710886306882",
+         "date_last_used": "0",
+         "date_modified": "13427710886423736",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Favorites bar",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "other": {
+         "children": [  ],
+         "date_added": "13427710886306882",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13427710886306882",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "workspaces_v2": {
+         "children": [  ],
+         "date_added": "13427710886306882",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "75aa6670-344f-549d-b742-660f029506ab",
+         "id": "5",
+         "name": "Workspaces",
+         "source": "unknown",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CjEKDgiIgQISCKoUSjGfAQAAEgAqGFoxeGZJVXVtbzNDYkFERkNUSlJTTWc9PUgDoAYMEo4BCAMSiQEKHG5qZ0R1ODhlQ3J2WHA4NnBEN2ZIR2NxRnA4OD0SJGQ5NDVhYTFjLTVhMmEtNTUzZi1hNWI3LWY5ZDM0N2Q1NzYwMhgAIAAoADDY1brSzjM4s9y60s4zQLPcutLOM0oceXpOQjAxY241NEE3Y1JVMHVUKy9QZ21UdFVvPVoAZQAAAADCPgJgABKtAQgNEqgBChxxSktFZktSOHJtRXM3QTJzRkRtN0xwYjlTM0k9EiRlMGRhNTVhYy1lYzg3LTQzOWUtYTM3OS1jN2FhYTJiMTZlZGIYACABKAEw5NjoifMzOK60go3yM0DWnueJ8zNKHFdyTkZTYTk5MHVYemFMeUtRcFlCcEJTd3Z2ND1aHyId1jRMSStkcVppV24vMmxBZCtUT2h4eXg3TjV0bz1lAAAAAMI+AmAFEq0BCAwSqAEKHGs1L3ZvWE5pN3N1OC9kL09hUDhBSXBSMUNTbz0SJDZkZWM0YjQ5LTUwMWYtNDg1Ni1hM2JjLWUxYTMyNTYyYmFlNBgAIAEoATDj2OiJ8zM4vdeBjfIzQNae54nzM0ocMzcydDJ3UlFFT0xhTmVXYmtZZmNUei9EdmVBPVofIh2tS2Q3R2VRU2lFbFl2U290VmhGUVdnTmxBUys4PWUAAAAAwj4CYAUSrAEICxKnAQocWm01aWIxdy9hbzcrQ2xSWDJOTnlSL1NhbC9BPRIkYjgxZWUzNWMtNTk3Yi00Y2QyLTg5OTYtMjA4ZDBiOGUxZjYwGAAgACgAMMabs+rtMzjNyf7r4zNAzcn+6+MzShx6UDhtWDlZa1kvSm10eWg5azUzTThyZnNRMEU9Wh4iHFpkK1dOZGJBU3RTc2twU0c0Z2tSRXlFVFBXYz1ltR1YJMI+AmAFEq0BCA4SqAEKHEFkSVlRMGx3VDdGZzZFZzRiU1FTUGYrUHZQYz0SJGQ5ZWM3Mjc0LWEyNzAtNGMwZS04NmMyLTAxY2M2Y2E2YzE1MhgAIAAoADDuzION8jM4gPGCjfIzQIDxgo3yM0ocblVrQ2w0S2NPUVNPb2dOZ0tqelYwMDVLN0JNPVofIh3rejJXSDV1cmlPcG9ML1F2empUYm56WkdYcFk4PWUAAAAAwj4CYAASjgEIARKJAQoceXhKLzZmdmtlY3I3a3A1RVF6QjR0V0xwZGJFPRIkMDNiOTQ1ZTMtMDg1OC01OTA4LTg5NmQtNjE3Zjc1ZThkZGE2GAAgACgAMNHVutLOMzix2rrSzjNAsdq60s4zShxhUkNXTGdoRjliNUlucUtJRHZ1Si9qdlFrRmM9WgBlAAAAAMI+AmAAEo4BCAISiQEKHFljU1RvbnZFU1B3cUNzNEwyY3JWaHY2OEw5OD0SJDE4YTk0OWQxLTJiMjMtNWM1Ny1iYTEzLTRkOGM0ZTk3YjM1NxgAIAAoADDS1brSzjM4gNu60s4zQIDbutLOM0ocb1BWa2h3QlJiVjY1S0NXUjIrSU9OSFdvT3U4PVoAZQAAAADCPgJgABKsAQgKEqcBChxueXRvTzVscTdVWlJTbm96U1JDMW9GSzdIOGs9EiRmYjJmMGE4Ni1mMDBlLTQzYTMtYmZmMC1jYmViYmRhNjJlZmUYACAAKAAw58P+6+MzOKTJ/uvjM0Ckyf7r4zNKHHRUZWd4OGtRVlRLd3Nqanp1MTl1V1M3Nk8xYz1aHiIcOTMrcCtvMVFZcVJaMEZLMGFPSFNvSDVpSktBPWUAAAAAwj4CYAUSjgEIBRKJAQocd1JCclpMKzZQQTlhdktnak5QN0pYRExjZnZzPRIkMTg2YjIyMzEtNGY2MS01NTlmLWFmODAtZDk3MTliODk0MTM2GAAgACgAMNfVutLOMzj427rSzjNA+Nu60s4zShxubXg2NXNRRHZ4SThUZ0VlditBK250dG9TbjQ9WgBlAAAAAMI+AmAAMAA4AA==",
+   "version": 1
+}
