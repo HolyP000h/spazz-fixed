@@ -16,7 +16,7 @@ class _Base44ScreenState extends State<Base44Screen> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..loadRequest(Uri.parse('PASTE_YOUR_VERCEL_URL_HERE')); // 👈 Replace this with your copied link!
+      ..loadRequest(Uri.parse('https://base44-p1k7qe65h-holyp000hs-projects.vercel.app/')); // 👈 Replace this with your copied link!
   }
 
   @override
