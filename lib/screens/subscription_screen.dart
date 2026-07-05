@@ -156,8 +156,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   Future<void> _restorePurchases() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     await _iap.restorePurchases();
+    if (!mounted) return;
     setState(() => _loading = false);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
