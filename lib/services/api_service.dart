@@ -13,7 +13,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
-        if (headers != null) ...headers,
+        ...?headers, // Fixed line 16!
       },
     );
 
@@ -33,7 +33,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
-        if (headers != null) ...headers,
+        ...?headers, // Fixed line 36!
       },
       body: json.encode(body),
     );
