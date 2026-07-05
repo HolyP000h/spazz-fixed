@@ -287,7 +287,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(currentContext).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${item['emoji']} ${item['name']} unlocked!'),
         backgroundColor: const Color(0xFF7C3AED),
@@ -297,7 +297,6 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
 
   Future<void> _equipSkin(Map<String, dynamic> skin) async {
     if (!mounted) return;
-    final currentContext = context;
 
     HapticFeedback.mediumImpact();
     final prefs = await SharedPreferences.getInstance();
@@ -315,7 +314,7 @@ class _ShopScreenState extends State<ShopScreen> with SingleTickerProviderStateM
     } catch (_) {}
 
     if (!mounted) return;
-    ScaffoldMessenger.of(currentContext).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${skin['emoji']} ${skin['name']} equipped! Others will feel your presence.'),
         backgroundColor: Color(skin['rarityColor'] as int),
