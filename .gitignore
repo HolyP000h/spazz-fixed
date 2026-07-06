@@ -51,3 +51,5 @@ users_db.json
 *geofence*.json
 *coords*.tmp
 spatial_index.bak
+
+.dart_tool/
