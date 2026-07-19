@@ -53,3 +53,4 @@ users_db.json
 spatial_index.bak
 
 .dart_tool/
+node_modules/
