@@ -379,14 +379,14 @@ class _PingButtonState extends State<PingButton> with SingleTickerProviderStateM
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _cooldown ? const Color(0xFF1E1E2E) : pingColor.withOpacity(0.15),
+                color: _cooldown ? const Color(0xFF1E1E2E) : pingColor.withValues(alpha: 0.15),
                 border: Border.all(
                   color: _cooldown ? const Color(0xFF444460) : pingColor,
                   width: 2.5,
                 ),
                 boxShadow: _cooldown
                     ? []
-                    : [BoxShadow(color: pingColor.withOpacity(0.5), blurRadius: 20, spreadRadius: 4)],
+                    : [BoxShadow(color: pingColor.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 4)],
               ),
               child: _sending
                   ? const Center(
@@ -414,7 +414,7 @@ class _PingButtonState extends State<PingButton> with SingleTickerProviderStateM
         Text(
           _cooldown ? 'cooldown' : (isPremium ? '👑 hold to switch' : 'hold to switch'),
           style: TextStyle(
-            color: _cooldown ? const Color(0xFF444460) : pingColor.withOpacity(0.8),
+            color: _cooldown ? const Color(0xFF444460) : pingColor.withValues(alpha: 0.8),
             fontSize: 10,
           ),
         ),
@@ -567,7 +567,7 @@ class _PingRow extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isActive ? color.withOpacity(0.1) : const Color(0xFF0A0A0F),
+            color: isActive ? color.withValues(alpha: 0.1) : const Color(0xFF0A0A0F),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isActive ? color : const Color(0xFF1E1E2E),
@@ -590,7 +590,7 @@ class _PingRow extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.15),
+                            color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -711,7 +711,7 @@ class _IncomingPingOverlayState extends State<IncomingPingOverlay>
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: color, width: isPremium ? 2 : 1),
               boxShadow: isPremium
-                  ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 24, spreadRadius: 4)]
+                  ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 24, spreadRadius: 4)]
                   : [],
             ),
             child: Row(
@@ -722,8 +722,8 @@ class _IncomingPingOverlayState extends State<IncomingPingOverlay>
                   height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: color.withOpacity(0.15),
-                    boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 12)],
+                    color: color.withValues(alpha: 0.15),
+                    boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 12)],
                   ),
                   child: Center(
                     child: Text(widget.ping.emoji, style: const TextStyle(fontSize: 26)),

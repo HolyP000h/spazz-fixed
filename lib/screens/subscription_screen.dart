@@ -238,7 +238,7 @@ class _PremiumActiveView extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7C3AED).withOpacity(0.5),
+                  color: const Color(0xFF7C3AED).withValues(alpha: 0.5),
                   blurRadius: 30,
                   spreadRadius: 5,
                 ),
@@ -305,7 +305,7 @@ class _UpgradeView extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7C3AED).withOpacity(0.5),
+                  color: const Color(0xFF7C3AED).withValues(alpha: 0.5),
                   blurRadius: 30,
                   spreadRadius: 5,
                 ),
@@ -475,7 +475,7 @@ class _PlanCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED).withOpacity(0.2),
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(savings!,

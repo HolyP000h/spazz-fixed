@@ -27,7 +27,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Set<Marker> _markers = {};
   Set<Circle> _hotspotCircles = {};
-  Set<Circle> _pingWaves = {};
+  final Set<Circle> _pingWaves = {};
 
   List<dynamic> _nearbyUsers = [];
   List<dynamic> _wisps = [];
@@ -36,7 +36,7 @@ class _MapScreenState extends State<MapScreen> {
   // Ping state
   List<String> _ownedPings = [];
   String _activePingId = 'ping_default';
-  List<PingData> _incomingPings = [];
+  final List<PingData> _incomingPings = [];
   Timer? _pingPollTimer;
 
   Timer? _locationTimer;
@@ -188,8 +188,8 @@ class _MapScreenState extends State<MapScreen> {
         circleId: CircleId(waveId),
         center: LatLng(ping.lat, ping.lng),
         radius: 80 + (priority * 40).toDouble(),
-        fillColor: color.withOpacity(0.15),
-        strokeColor: color.withOpacity(0.6),
+        fillColor: color.withValues(alpha: 0.15),
+        strokeColor: color.withValues(alpha: 0.6),
         strokeWidth: 2,
       ));
     });

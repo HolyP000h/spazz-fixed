@@ -410,11 +410,11 @@ class _SkinsTab extends StatelessWidget {
             color: const Color(0xFF13131A),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isActive ? rarityColor : (isOwned ? rarityColor.withOpacity(0.4) : const Color(0xFF1E1E2E)),
+              color: isActive ? rarityColor : (isOwned ? rarityColor.withValues(alpha: 0.4) : const Color(0xFF1E1E2E)),
               width: isActive ? 2 : 1,
             ),
             boxShadow: isActive
-                ? [BoxShadow(color: rarityColor.withOpacity(0.3), blurRadius: 20, spreadRadius: 2)]
+                ? [BoxShadow(color: rarityColor.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)]
                 : [],
           ),
           child: Padding(
@@ -440,9 +440,9 @@ class _SkinsTab extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: rarityColor.withOpacity(0.15),
+                                  color: rarityColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: rarityColor.withOpacity(0.5)),
+                                  border: Border.all(color: rarityColor.withValues(alpha: 0.5)),
                                 ),
                                 child: Text(skin['rarity'],
                                     style: TextStyle(
@@ -469,7 +469,7 @@ class _SkinsTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0A0A0F),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: rarityColor.withOpacity(0.2)),
+                    border: Border.all(color: rarityColor.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
@@ -477,7 +477,7 @@ class _SkinsTab extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(skin['effect'],
-                            style: TextStyle(color: rarityColor.withOpacity(0.9), fontSize: 11)),
+                            style: TextStyle(color: rarityColor.withValues(alpha: 0.9), fontSize: 11)),
                       ),
                     ],
                   ),
@@ -511,7 +511,7 @@ class _SkinsTab extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: rarityColor.withOpacity(0.15),
+                            color: rarityColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: rarityColor),
                           ),
@@ -607,9 +607,9 @@ class _PulsingEmojiState extends State<_PulsingEmoji> with SingleTickerProviderS
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: widget.color.withOpacity(0.15),
+          color: widget.color.withValues(alpha: 0.15),
           boxShadow: widget.isActive
-              ? [BoxShadow(color: widget.color.withOpacity(0.5), blurRadius: 16, spreadRadius: 2)]
+              ? [BoxShadow(color: widget.color.withValues(alpha: 0.5), blurRadius: 16, spreadRadius: 2)]
               : [],
         ),
         child: Center(child: Text(widget.emoji, style: const TextStyle(fontSize: 28))),
@@ -762,7 +762,7 @@ class _ItemGrid extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7C3AED).withOpacity(0.2),
+                        color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text('Owned',
