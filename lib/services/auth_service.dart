@@ -5,17 +5,22 @@ class AuthService {
   static bool _isAuthenticated = false;
 
   static Future<void> _loadFromStorage() async {
-    if (_currentUsername != null || _isAuthenticated) {
-      return;
-    }
-
+    // --- DEVELOPMENT OVERRIDE ---
+    // This forces your local storage to always be authenticated as 'ben'
     final prefs = await SharedPreferences.getInstance();
-    _currentUsername = prefs.getString('auth_username');
-    _isAuthenticated = prefs.getBool('auth_is_authenticated') ?? false;
+    _currentUsername = 'ben';
+    _isAuthenticated = true;
+    
+    await prefs.setString('auth_username', 'ben');
+    await prefs.setBool('auth_is_authenticated', true);
+    await prefs.setString('token', 'demo-token'); 
+    await prefs.setString('user_id', 'ben');
+    return;
+    // ----------------------------
   }
 
   static Future<bool> login(String email, String password) async {
-    final username = email.trim().isEmpty ? 'user' : email.trim();
+    final username = email.trim().isEmpty ? 'ben' : email.trim();
     final prefs = await SharedPreferences.getInstance();
 
     _currentUsername = username;
@@ -29,7 +34,7 @@ class AuthService {
   }
 
   static Future<bool> register(String email, String password) async {
-    final username = email.trim().isEmpty ? 'user' : email.trim();
+    final username = email.trim().isEmpty ? 'ben' : email.trim();
     final prefs = await SharedPreferences.getInstance();
 
     _currentUsername = username;
@@ -45,13 +50,13 @@ class AuthService {
   static Future<void> signInWithGoogle() async {
     final prefs = await SharedPreferences.getInstance();
 
-    _currentUsername = 'Google User';
+    _currentUsername = 'ben';
     _isAuthenticated = true;
 
     await prefs.setString('auth_username', _currentUsername!);
     await prefs.setBool('auth_is_authenticated', true);
     await prefs.setString('token', 'demo-token');
-    await prefs.setString('user_id', 'google-user');
+    await prefs.setString('user_id', 'ben');
   }
 
   static Future<String?> getUsername() async {
@@ -60,15 +65,10 @@ class AuthService {
   }
 
   static Future<void> clearSession() async {
+    // Disabled during testing so it doesn't wipe our forced auth block
     final prefs = await SharedPreferences.getInstance();
-
-    _currentUsername = null;
-    _isAuthenticated = false;
-
-    await prefs.remove('auth_username');
-    await prefs.setBool('auth_is_authenticated', false);
-    await prefs.remove('token');
-    await prefs.remove('user_id');
+    _currentUsername = 'ben';
+    _isAuthenticated = true;
   }
 
   static Future<bool> get isAuthenticated async {
