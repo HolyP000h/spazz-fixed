@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUserData();
   }
   
-Future<void> _loadUserData() async {
+  Future<void> _loadUserData() async {
     // Set loading state initially
     setState(() => _loading = true);
 
