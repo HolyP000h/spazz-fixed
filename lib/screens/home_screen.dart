@@ -28,37 +28,39 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadUserData();
   }
+  
+Future<void> _loadUserData() async {
+    // Set loading state initially
+    setState(() => _loading = true);
 
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-    final userId = prefs.getString('user_id') ?? '';
+    // --- DEVELOPMENT MOCK OVERRIDE ---
+    // Simulating a delay so it feels natural, then serving local data directly
+    await Future.delayed(const Duration(milliseconds: 250));
 
-    try {
-      final userRes = await http.get(
-        Uri.parse('$_baseUrl/api/user/$userId'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      final lbRes = await http.get(
-        Uri.parse('$_baseUrl/api/leaderboard'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+    if (mounted) {
+      setState(() {
+        // Populates all dashboard card fields perfectly
+        _userData = {
+          "username": "ben",
+          "wisp_coins": 45,
+          "level": 1,
+          "xp": 35,
+          "steps": 4820,
+          "calories": 245.0,
+          "wisps_collected": 12,
+        };
 
-      if (userRes.statusCode == 200) {
-        setState(() {
-          _userData = json.decode(userRes.body);
-        });
-      }
-      if (lbRes.statusCode == 200) {
-        setState(() {
-          _leaderboard = json.decode(lbRes.body);
-        });
-      }
-    } catch (e) {
-      // ignore network errors silently
+        // Populates your leaderboard rows cleanly
+        _leaderboard = [
+          {"username": "ben", "xp": 120},
+          {"username": "ShadowHunter", "xp": 95},
+          {"username": "WispMaster", "xp": 50}
+        ];
+        
+        _loading = false;
+      });
     }
-
-    setState(() => _loading = false);
+    // ----------------------------------
   }
 
   @override
