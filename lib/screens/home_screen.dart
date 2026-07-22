@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import '../design/spazz_theme.dart';
 import 'chat_screen.dart';
@@ -20,8 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic> _userData = {};
   List<dynamic> _leaderboard = [];
   bool _loading = true;
-
-  static const _baseUrl = 'https://www.spazzapp.com';
 
   @override
   void initState() {

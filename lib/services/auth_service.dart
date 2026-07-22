@@ -66,7 +66,6 @@ class AuthService {
 
   static Future<void> clearSession() async {
     // Disabled during testing so it doesn't wipe our forced auth block
-    final prefs = await SharedPreferences.getInstance();
     _currentUsername = 'ben';
     _isAuthenticated = true;
   }

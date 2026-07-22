@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+// ignore_for_file: avoid_print
+
 class ApiService {
   static const String _baseUrl = 'https://www.spazzapp.com';
 
   static Future<dynamic> get(String path, {Map<String, String>? headers}) async {
     // --- DEVELOPMENT MOCK SYSTEM ---
     // Intercept requests locally to prevent 401/404 server blocks
-    print("ApiService MOCK GET Intercepted: $path");
     
     if (path.contains('/api/user/')) {
       return {
