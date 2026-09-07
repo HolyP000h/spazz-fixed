@@ -1,7 +1,7 @@
 // --- 📍 GLOBAL STATE ---
 let myLat = 39.333, myLon = -82.982; 
 let markers = {};
-let lockedTargetId = null; 
+let activeTargetId = null; // Changed from 'lockedTargetId' to better reflect auto-encounters
 let isAlerting = false; 
 
 // --- 🔊 AUDIO ENGINE ---
@@ -47,22 +47,26 @@ async function updateRadar() {
 
         const currentIds = new Set(users.map(u => u.id));
 
-        // 1. DUAL INTERCEPTOR (MATCH vs WISP)
-        if (!lockedTargetId && !isAlerting) {
+        // 1. AUTOMATIC PROXIMITY INTERCEPTOR
+        if (!activeTargetId && !isAlerting) {
             const match = users.find(u => u.is_match === true);
             const wispMatch = users.find(u => u.type === 'wisp');
 
+            // Matches trigger within 100 meters
             if (match && getDistance(myLat, myLon, match.lat, match.lon) < 100) {
                 triggerSpazzAlert(match, 'spazz');
-            } else if (wispMatch && getDistance(myLat, myLon, wispMatch.lat, wispMatch.lon) < 50) {
+            } 
+            // Wisps trigger within 50 meters
+            else if (wispMatch && getDistance(myLat, myLon, wispMatch.lat, wispMatch.lon) < 50) {
                 triggerSpazzAlert(wispMatch, 'wisp');
             }
         }
 
-        // 2. RENDER & TRACKING 
+        // 2. RENDER & AUTO-TRACKING PROCESSING
         users.forEach(user => {
             const color = user.is_match ? '#8a2be2' : (user.type === 'user' ? '#555' : '#00ffff');
 
+            // Update Map Marker Positions
             if (markers[user.id]) {
                 markers[user.id].setLatLng([user.lat, user.lon]);
             } else {
@@ -70,48 +74,44 @@ async function updateRadar() {
                     radius: user.type === 'user' ? 10 : 8,
                     fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.8
                 }).addTo(map);
-
-                markers[user.id].on('click', () => {
-                    lockedTargetId = user.id;
-                    playSound('lock');
-                    document.getElementById('discovery-card').style.display = 'block';
-                });
+                
+                // Removed manual marker click event to keep map completely administrative
             }
 
-            // --- 📍 TRACKING LOGIC ---
-            if (lockedTargetId === user.id) {
+            // --- 📍 PROXIMITY ENGINE & AUTO-COLLECT ---
+            if (activeTargetId === user.id) {
                 const dist = getDistance(myLat, myLon, user.lat, user.lon);
                 
-                // AUTO-BREAK LOCK (Distance > 35m)
-                if (dist > 35) {
-                    lockedTargetId = null; 
+                // AUTO-BREAK ENCOUNTER (User walked away > 50m)
+                if (dist > 50) {
+                    activeTargetId = null; 
                     document.getElementById('status').innerText = "SIGNAL LOST...";
-                    document.getElementById('proximity-fill').style.height = "0%";
+                    if (document.getElementById('proximity-fill')) document.getElementById('proximity-fill').style.height = "0%";
                     document.getElementById('discovery-card').style.display = 'none';
                     return; 
                 }
 
-                // UPDATE UI
-                document.getElementById('status').innerText = `LOCKED: ${Math.round(dist)}m`;
+                // UPDATE UI SYSTEM
+                document.getElementById('status').innerText = `${user.type === 'wisp' ? 'WISP NEARBY' : 'MATCH CLOSING IN'}: ${Math.round(dist)}m`;
                 
                 const fill = document.getElementById('proximity-fill');
                 if (fill) {
-                    let percent = Math.max(0, Math.min(100, (100 - (dist * 3)))); // Scaled for better visual feedback
+                    let percent = Math.max(0, Math.min(100, (100 - (dist * 2)))); 
                     fill.style.height = percent + "%";
                 }
 
-                // AUTO-COLLECT (Distance < 15m)
+                // AUTO-HARVEST/COLLECT (Distance < 15m)
                 if (dist < 15) {
                     playSound('collect');
                     harvestTarget(user.id);
-                    lockedTargetId = null;
+                    activeTargetId = null;
                     document.getElementById('discovery-card').style.display = 'none';
-                    document.getElementById('status').innerText = "TARGET ACQUIRED!";
+                    document.getElementById('status').innerText = "DISCOVERED!";
                 }
             }
         });
 
-        // 3. CLEANUP
+        // 3. CLEANUP DISCONNECTED ENTITIES
         Object.keys(markers).forEach(id => {
             if (id !== 'me' && !currentIds.has(id)) { 
                 map.removeLayer(markers[id]); 
@@ -122,23 +122,26 @@ async function updateRadar() {
     } catch (err) { console.error("Radar Error:", err); }
 }
 
+// --- 🚨 CLEAN AUTO-TRIGGER SYSTEM ---
 function triggerSpazzAlert(target, type) {
     isAlerting = true;
+    activeTargetId = target.id;
+    
+    // Smoothly reveal the screen overlay instantly
+    document.getElementById('discovery-card').style.display = 'block';
+
     if (type === 'spazz') {
         if (navigator.vibrate) navigator.vibrate([500, 110, 500]);
         playSound('lock');
-        if (confirm(`TARGET DETECTED: ${target.age}${target.gender[0].toUpperCase()}. Lock on?`)) {
-            lockedTargetId = target.id;
-            document.getElementById('discovery-card').style.display = 'block';
-        }
+        document.getElementById('status').innerText = "NEW SIGNAL DETECTED...";
     } else {
+        // Wisp Specific passive encounter
         if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
         playSound('wisp_ping');
-        if (confirm("Shhh... Be vewy quiet. Hunting a Wisp. Track?")) {
-            lockedTargetId = target.id;
-            document.getElementById('discovery-card').style.display = 'block';
-        }
+        document.getElementById('status').innerText = "WISP DETECTED...";
     }
+    
+    // Clear alert cooldown block after 15s
     setTimeout(() => { isAlerting = false; }, 15000);
 }
 
@@ -146,6 +149,7 @@ async function harvestTarget(targetId) {
     await fetch(`/api/collect/${targetId}`, { method: 'POST' });
 }
 
+// --- 🌍 POSITION TRACKING ---
 navigator.geolocation.watchPosition(pos => {
     myLat = pos.coords.latitude; myLon = pos.coords.longitude;
     if (!markers['me']) {

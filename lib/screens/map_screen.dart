@@ -19,9 +19,9 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   Position? _myPosition;
-  bool _loading = true;
-  bool _isPremium = false;
-  String _token = '';
+  bool _loading = false; // Set to true while fetching location and nearby data, false when done
+  bool _isPremium = false; // Set to true if the user has a premium subscription, false otherwise
+  String _token = ''; 
   String _userId = '';
   String _username = '';
 
@@ -60,6 +60,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _init() async {
+    setState(() => _loading = true); // Set to true while fetching
+  // ... any other setup code you have there
+  await _fetchNearby();
+  setState(() => _loading = false); // Turns off when done
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('token') ?? '';
     _userId = prefs.getString('user_id') ?? '';
@@ -106,7 +110,9 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       setState(() => _myPosition = pos);
       await _pingLocation();
@@ -254,7 +260,7 @@ class _MapScreenState extends State<MapScreen> {
         circles.add(Circle(
           circleId: CircleId('hotspot_${hotspot['id']}'),
           center: LatLng(hotspot['lat'], hotspot['lng']),
-          radius: 50 + (intensity * 10).clamp(0, 200),
+          radius: (50 + (intensity * 10).clamp(0, 200)).toDouble(),
           fillColor: Color.fromRGBO(255, (50 - intensity * 5).clamp(0, 50).toInt(), 0,
               (0.1 + intensity * 0.05).clamp(0.1, 0.5)),
           strokeColor: Colors.transparent,
@@ -368,15 +374,17 @@ class _MapScreenState extends State<MapScreen> {
       body: Stack(
         children: [
           // ── MAP ──────────────────────────────────────────────────
-          _myPosition == null
-              ? const Center(
+          (_myPosition == null || _loading)
+              ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: Color(0xFF7C3AED)),
-                      SizedBox(height: 16),
-                      Text('Getting your location...',
-                          style: TextStyle(color: Color(0xFF888899))),
+                      const CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                      const SizedBox(height: 16),
+                      Text(
+                        _loading ? 'Loading nearby players...' : 'Getting your location...',
+                        style: const TextStyle(color: Color(0xFF888899)),
+                      ),
                     ],
                   ),
                 )

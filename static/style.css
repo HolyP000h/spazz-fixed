@@ -158,16 +158,23 @@ body, html {
   inset: 0;
   background: #ffaa00;
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  /* Webkit Prefixes First */
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
+  /* Standard Properties Last */
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   padding: 2px; 
 }
 
 /* --- THE NEBULA PUNCH-THROUGH --- */
 main, section, .dashboard, .card, .content-box, .auth-box {
-    background: rgba(255, 255, 255, 0.03) !important; /* Lighter tint for more "Glass" feel */
-    backdrop-filter: blur(15px) saturate(160%); /* Heavier blur like the screenshot */
+    background: rgba(255, 255, 255, 0.03) !important;
+    
+    /* Vendor prefix first for Safari support */
+    -webkit-backdrop-filter: blur(15px) saturate(160%);
+    /* Standard property last */
+    backdrop-filter: blur(15px) saturate(160%);
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 20px; /* Rounder corners look more modern */
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
@@ -182,6 +189,9 @@ main, section, .dashboard, .card, .content-box, .auth-box {
 /* Keep the top navigation bar dark but translucent */
 header, nav, .top-bar {
     background: rgba(0, 0, 0, 0.75) !important;
+    /* Vendor prefix for Safari support */
+    -webkit-backdrop-filter: blur(15px);
+    /* Standard property last */
     backdrop-filter: blur(15px);
     border-bottom: 1px solid rgba(0, 255, 255, 0.2); /* Cyan glow bottom border */
 }
@@ -215,6 +225,9 @@ main, #root, #__next, .app-shell, .layout-wrapper {
     border: 2px solid #ff00ff;
     background: rgba(255, 0, 255, 0.1);
     box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+    /* Vendor prefix for Safari/iOS support */
+    -webkit-backdrop-filter: blur(5px); /* Glassmorphism effect */
+    /* Standard property last */
     backdrop-filter: blur(5px); /* Glassmorphism effect */
     transition: all 0.3s ease;
 }
@@ -232,6 +245,9 @@ main, #root, #__next, .app-shell, .layout-wrapper {
     letter-spacing: 2px;
     text-transform: uppercase;
     margin-bottom: 20px;
+    /* Vendor prefix for Safari/iOS support */
+    -webkit-backdrop-filter: blur(5px);
+    /* Standard property last */
     backdrop-filter: blur(5px);
 }
 
@@ -276,6 +292,9 @@ main, #root, #__next, .app-shell, .layout-wrapper {
 /* --- TABS POLISH --- */
 .tab-bar {
     background: rgba(0,0,0,0.4);
+    /* Vendor prefix for Safari/iOS support */
+    -webkit-backdrop-filter: blur(10px);
+    /* Standard property last */
     backdrop-filter: blur(10px);
 }
 

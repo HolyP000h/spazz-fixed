@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spazz_fixed/services/api_service.dart';
 import 'package:spazz_fixed/services/auth_service.dart';
+import '../design/spazz_theme.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -47,18 +48,18 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: SpazzTheme.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF13131A),
-        title: const Text('Chat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        backgroundColor: SpazzTheme.bgSecondary,
+        title: const Text('Chat', style: TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w700)),
       ),
       body: Column(
         children: [
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: SpazzTheme.accentPurple))
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(SpazzTheme.spacing16),
                     itemCount: _messages.length,
                     itemBuilder: (_, i) {
                       final msg = _messages[i];
@@ -66,20 +67,20 @@ class _ChatScreenState extends State<ChatScreen> {
                       return Align(
                         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          margin: const EdgeInsets.only(bottom: SpazzTheme.spacing8),
+                          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing14, vertical: SpazzTheme.spacing10),
                           decoration: BoxDecoration(
-                            color: isMe ? const Color(0xFF7C3AED) : const Color(0xFF1E1E2E),
-                            borderRadius: BorderRadius.circular(16),
+                            color: isMe ? SpazzTheme.accentPurple : SpazzTheme.bgTertiary,
+                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
                           ),
                           child: Column(
                             crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                             children: [
                               if (!isMe)
                                 Text(msg['username'] ?? '', style: const TextStyle(
-                                  color: Color(0xFF06B6D4), fontSize: 11, fontWeight: FontWeight.w600,
+                                  color: SpazzTheme.accentCyan, fontSize: 11, fontWeight: FontWeight.w600,
                                 )),
-                              Text(msg['message'] ?? '', style: const TextStyle(color: Colors.white)),
+                              Text(msg['message'] ?? '', style: const TextStyle(color: SpazzTheme.textPrimary)),
                             ],
                           ),
                         ),
@@ -88,28 +89,28 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
           ),
           Container(
-            padding: const EdgeInsets.all(12),
-            color: const Color(0xFF13131A),
+            padding: const EdgeInsets.all(SpazzTheme.spacing12),
+            color: SpazzTheme.bgSecondary,
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _msgCtrl,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: SpazzTheme.textPrimary),
                     decoration: const InputDecoration(
                       hintText: 'Message...',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(horizontal: SpazzTheme.spacing16, vertical: SpazzTheme.spacing10),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: SpazzTheme.spacing8),
                 GestureDetector(
                   onTap: _send,
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(SpazzTheme.spacing12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED),
-                      borderRadius: BorderRadius.circular(12),
+                      color: SpazzTheme.accentPurple,
+                      borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
                     ),
                     child: const Icon(Icons.send, color: Colors.white, size: 20),
                   ),
