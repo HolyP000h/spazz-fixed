@@ -31,8 +31,25 @@ class ApiService {
     }
 
     if (path.contains('/api/nearby') || path.contains('/api/ping/nearby')) {
-      // Returns empty list or simulated nearby data if needed
-      return [];
+      // Return a simulated match for testing the "Spazz" flow
+      return {
+        "users": [
+          {
+            "id": "match_123",
+            "username": "Sarah",
+            "lat": 0.0, // Will be offset from user in MapScreen
+            "lng": 0.0,
+            "is_premium": false,
+            "gender": "Female",
+            "age": 24,
+            "is_broadcasting": true
+          }
+        ],
+        "wisps": [
+          {"id": "wisp_1", "lat": 0.001, "lng": 0.001, "xp": 10, "credits": 5}
+        ],
+        "hotspots": []
+      };
     }
     // ---------------------------------
 

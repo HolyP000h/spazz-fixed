@@ -13,6 +13,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _user;
+  Map<String, dynamic> _prefs = {};
   bool _loading = true;
 
   @override
@@ -23,11 +24,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _load() async {
     try {
-      final res = await ApiService.get('/api/me');
-      setState(() { _user = res; _loading = false; });
+      final userRes = await ApiService.get('/api/me');
+      final prefRes = await AuthService.getPreferences();
+      setState(() {
+        _user = userRes;
+        _prefs = prefRes;
+        _loading = false;
+      });
     } catch (_) {
       setState(() => _loading = false);
     }
+  }
+
+  Future<void> _updatePref(String key, dynamic value) async {
+    final Map<String, dynamic> update = {key: value};
+    await AuthService.updatePreferences(
+      gender: key == 'gender' ? value : null,
+      age: key == 'age' ? value : null,
+      interestedIn: key == 'interested_in' ? value : null,
+      minAge: key == 'min_age' ? value : null,
+      maxAge: key == 'max_age' ? value : null,
+      isBroadcasting: key == 'is_broadcasting' ? value : null,
+    );
+    setState(() {
+      _prefs[key] = value;
+    });
   }
 
   Future<void> _logout() async {
@@ -75,22 +96,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(_user!['username'] ?? '', style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.w700, color: SpazzTheme.textPrimary,
                       )),
-                      if (_user!['is_premium'] == true)
-                        Container(
-                          margin: const EdgeInsets.only(top: SpazzTheme.spacing6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text('PREMIUM', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black)),
-                        ),
                       const SizedBox(height: SpazzTheme.spacing32),
+                      
                       // Stats
                       _statsGrid(),
+                      
+                      const SizedBox(height: SpazzTheme.spacing32),
+                      
+                      // Dating Preferences Section
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('DATING PREFERENCES', style: TextStyle(
+                          color: SpazzTheme.textTertiary, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2,
+                        )),
+                      ),
+                      const SizedBox(height: SpazzTheme.spacing16),
+                      
+                      _prefTile('My Gender', _prefs['gender'], ['Male', 'Female', 'Other'], (v) => _updatePref('gender', v)),
+                      _prefTile('Interested In', _prefs['interested_in'], ['Male', 'Female', 'Both'], (v) => _updatePref('interested_in', v)),
+                      
+                      const SizedBox(height: SpazzTheme.spacing16),
+                      _ageSlider(),
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _prefTile(String label, String value, List<String> options, Function(String) onSelect) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: SpazzTheme.spacing12),
+      padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing16, vertical: SpazzTheme.spacing8),
+      decoration: BoxDecoration(
+        color: SpazzTheme.bgSecondary,
+        borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
+        border: Border.all(color: SpazzTheme.borderDark),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: SpazzTheme.textSecondary)),
+          DropdownButton<String>(
+            value: options.contains(value) ? value : options[0],
+            dropdownColor: SpazzTheme.bgSecondary,
+            underline: const SizedBox(),
+            items: options.map((o) => DropdownMenuItem(
+              value: o,
+              child: Text(o, style: const TextStyle(color: SpazzTheme.accentCyan, fontWeight: FontWeight.bold)),
+            )).toList(),
+            onChanged: (v) { if (v != null) onSelect(v); },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ageSlider() {
+    double min = (_prefs['min_age'] ?? 18).toDouble();
+    double max = (_prefs['max_age'] ?? 99).toDouble();
+    
+    return Container(
+      padding: const EdgeInsets.all(SpazzTheme.spacing16),
+      decoration: BoxDecoration(
+        color: SpazzTheme.bgSecondary,
+        borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
+        border: Border.all(color: SpazzTheme.borderDark),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Age Range', style: TextStyle(color: SpazzTheme.textSecondary)),
+              Text('${min.toInt()} - ${max.toInt()}', style: const TextStyle(color: SpazzTheme.accentCyan, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          RangeSlider(
+            values: RangeValues(min, max),
+            min: 18,
+            max: 99,
+            activeColor: SpazzTheme.accentCyan,
+            inactiveColor: SpazzTheme.bgTertiary,
+            onChanged: (RangeValues values) {
+              _updatePref('min_age', values.start.toInt());
+              _updatePref('max_age', values.end.toInt());
+            },
+          ),
+        ],
+      ),
     );
   }
 

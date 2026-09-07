@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter/services.dart';
 import 'subscription_screen.dart';
 import '../widgets/ping_system.dart';
+import '../widgets/spazz_radar.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import 'hunt_state_screens.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -19,8 +22,9 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   Position? _myPosition;
-  bool _loading = false; // Set to true while fetching location and nearby data, false when done
-  bool _isPremium = false; // Set to true if the user has a premium subscription, false otherwise
+  double _heading = 0.0;
+  bool _loading = false;
+  bool _isPremium = false;
   String _token = ''; 
   String _userId = '';
   String _username = '';
@@ -33,6 +37,14 @@ class _MapScreenState extends State<MapScreen> {
   List<dynamic> _wisps = [];
   List<dynamic> _hotspots = [];
 
+  // Spazz Match State
+  Map<String, dynamic>? _activeMatch;
+  double? _lastDistance;
+  bool _isHunting = false;
+  Map<String, dynamic> _myPrefs = {};
+  bool _showSpazzFlash = false;
+  double _intensity = 0.0;
+
   // Ping state
   List<String> _ownedPings = [];
   String _activePingId = 'ping_default';
@@ -41,8 +53,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Timer? _locationTimer;
   Timer? _fetchTimer;
-
-  static const _baseUrl = 'https://www.spazzapp.com';
+  StreamSubscription<Position>? _positionStream;
 
   @override
   void initState() {
@@ -55,31 +66,28 @@ class _MapScreenState extends State<MapScreen> {
     _locationTimer?.cancel();
     _fetchTimer?.cancel();
     _pingPollTimer?.cancel();
+    _positionStream?.cancel();
     _mapController?.dispose();
     super.dispose();
   }
 
   Future<void> _init() async {
-    setState(() => _loading = true); // Set to true while fetching
-  // ... any other setup code you have there
-  await _fetchNearby();
-  setState(() => _loading = false); // Turns off when done
+    setState(() => _loading = true);
+    
     final prefs = await SharedPreferences.getInstance();
+    _myPrefs = await AuthService.getPreferences();
+    
     _token = prefs.getString('token') ?? '';
     _userId = prefs.getString('user_id') ?? '';
     _username = prefs.getString('username') ?? 'Hunter';
     _activePingId = prefs.getString('active_ping') ?? 'ping_default';
 
     try {
-      final res = await http.get(
-        Uri.parse('$_baseUrl/api/user/$_userId'),
-        headers: {'Authorization': 'Bearer $_token'},
-      );
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
+      final res = await ApiService.get('/api/user/$_userId');
+      if (res != null) {
         setState(() {
-          _isPremium = data['is_premium'] ?? false;
-          _ownedPings = List<String>.from(data['inventory'] ?? [])
+          _isPremium = res['is_premium'] ?? false;
+          _ownedPings = List<String>.from(res['inventory'] ?? [])
               .where((id) => id.startsWith('ping_'))
               .toList();
         });
@@ -88,10 +96,25 @@ class _MapScreenState extends State<MapScreen> {
 
     await _getLocation();
 
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (_) => _pingLocation());
-    _fetchTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetchNearby());
+    // Smooth position updates
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 2,
+      ),
+    ).listen((Position pos) {
+      if (mounted) {
+        setState(() {
+          _myPosition = pos;
+          _heading = pos.heading;
+        });
+        _updateCamera();
+        if (_isHunting) _updateHuntStatus();
+      }
+    });
 
-    // Poll for incoming pings every 5 seconds
+    _locationTimer = Timer.periodic(const Duration(seconds: 10), (_) => _pingLocation());
+    _fetchTimer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchNearby());
     _pingPollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollPings());
 
     await _fetchNearby();
@@ -110,49 +133,203 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
-      setState(() => _myPosition = pos);
+      setState(() {
+        _myPosition = pos;
+        _heading = pos.heading;
+      });
       await _pingLocation();
+      _updateCamera();
+      if (_isHunting) _updateHuntStatus();
     } catch (_) {}
+  }
+
+  void _updateCamera() {
+    if (_mapController == null || _myPosition == null) return;
+    _mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(_myPosition!.latitude, _myPosition!.longitude),
+          zoom: 18.0,
+          tilt: 65.0, // 1st person tilt
+          bearing: _heading, // Follow heading
+        ),
+      ),
+    );
   }
 
   Future<void> _pingLocation() async {
     if (_myPosition == null) return;
     try {
-      await http.post(
-        Uri.parse('$_baseUrl/api/location/update'),
-        headers: {'Authorization': 'Bearer $_token', 'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': _userId,
-          'lat': _myPosition!.latitude,
-          'lng': _myPosition!.longitude,
-        }),
-      );
+      await ApiService.post('/api/location/update', {
+        'user_id': _userId,
+        'lat': _myPosition!.latitude,
+        'lng': _myPosition!.longitude,
+      });
     } catch (_) {}
   }
 
   Future<void> _fetchNearby() async {
     if (_myPosition == null) return;
+
+    if (!(_myPrefs['is_broadcasting'] ?? false)) {
+      _buildMockMarkers();
+      return;
+    }
+
     try {
-      final res = await http.get(
-        Uri.parse('$_baseUrl/api/nearby?lat=${_myPosition!.latitude}&lng=${_myPosition!.longitude}&user_id=$_userId'),
-        headers: {'Authorization': 'Bearer $_token'},
+      final res = await ApiService.get(
+        '/api/nearby?lat=${_myPosition!.latitude}&lng=${_myPosition!.longitude}&user_id=$_userId'
       );
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
+      
+      if (res != null) {
+        final users = (res['users'] as List?) ?? [];
+        
+        // Offset mock users so they aren't exactly on top of us if 0.0
+        final processedUsers = users.map((u) {
+          if (u['lat'] == 0.0) {
+            u['lat'] = _myPosition!.latitude + 0.0003;
+            u['lng'] = _myPosition!.longitude + 0.0003;
+          }
+          return u;
+        }).toList();
+
         setState(() {
-          _nearbyUsers = data['users'] ?? [];
-          _wisps = data['wisps'] ?? [];
-          _hotspots = data['hotspots'] ?? [];
+          _nearbyUsers = processedUsers;
+          _wisps = res['wisps'] ?? [];
+          _hotspots = res['hotspots'] ?? [];
         });
+        
         _buildMarkers();
+        _checkForMatches();
       }
     } catch (_) {
       _buildMockMarkers();
     }
+  }
+
+  void _checkForMatches() async {
+    if (_isHunting || _myPosition == null) return;
+
+    for (var user in _nearbyUsers) {
+      final genderMatch = _myPrefs['interested_in'] == 'Both' || user['gender'] == _myPrefs['interested_in'];
+      final ageMatch = user['age'] >= (_myPrefs['min_age'] ?? 18) && user['age'] <= (_myPrefs['max_age'] ?? 99);
+      
+      if (genderMatch && ageMatch && user['is_broadcasting'] == true) {
+        double dist = Geolocator.distanceBetween(
+          _myPosition!.latitude, _myPosition!.longitude, 
+          user['lat'], user['lng']
+        );
+
+        if (dist < 50) {
+          _triggerSpazzAlert(user);
+          break;
+        }
+      }
+    }
+  }
+
+  void _triggerSpazzAlert(Map<String, dynamic> user) async {
+    setState(() => _showSpazzFlash = true);
+    for (int i = 0; i < 4; i++) {
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (mounted) setState(() => _showSpazzFlash = false);
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => HuntDetectedScreen(
+          detectedUsername: user['username'], 
+          isPremium: user['is_premium'] ?? false
+        ),
+      ).then((_) => _startHunt(user));
+    }
+  }
+
+  void _startHunt(Map<String, dynamic> user) {
+    setState(() {
+      _activeMatch = user;
+      _isHunting = true;
+    });
+    _updateHuntStatus();
+  }
+
+  void _updateHuntStatus() {
+    if (!_isHunting || _activeMatch == null || _myPosition == null) return;
+
+    double dist = Geolocator.distanceBetween(
+      _myPosition!.latitude, _myPosition!.longitude, 
+      _activeMatch!['lat'], _activeMatch!['lng']
+    );
+
+    setState(() {
+      _intensity = (1.0 - (dist / 100)).clamp(0.0, 1.0);
+    });
+
+    bool isCloser = _lastDistance == null || dist < _lastDistance!;
+    _lastDistance = dist;
+
+    // Trigger directional haptics
+    if (isCloser) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
+
+    if (dist < 5) {
+      _completeEncounter();
+    } else {
+      // Show hot/cold overlay
+      _showHuntOverlay(dist, isCloser);
+    }
+  }
+
+  void _showHuntOverlay(double dist, bool isCloser) {
+    // In a real app, this might be a persistent overlay. 
+    // For this prototype, we'll use a snackbar or a temporary dialog if not already shown.
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isCloser ? '🔥 GETTING WARMER: ${dist.toInt()}m' : '❄️ GETTING COLDER: ${dist.toInt()}m',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: isCloser ? Colors.orange : Colors.blue,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _completeEncounter() async {
+    setState(() {
+      _isHunting = false;
+      _intensity = 0.0;
+    });
+    
+    // BAM - Face to face intense haptics
+    for (int i = 0; i < 8; i++) {
+      HapticFeedback.vibrate();
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => HuntConnectionScreen(
+          connectedUsername: _activeMatch!['username'], 
+          isPremium: _activeMatch!['is_premium'] ?? false
+        ),
+      );
+    }
+    
+    await ApiService.post('/api/encounter/success', {'target_id': _activeMatch!['id']});
+    _activeMatch = null;
+    _lastDistance = null;
   }
 
   Future<void> _pollPings() async {
@@ -333,15 +510,11 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _collectWisp(Map<String, dynamic> wisp) async {
     try {
-      await http.post(
-        Uri.parse('$_baseUrl/api/wisp/collect'),
-        headers: {'Authorization': 'Bearer $_token', 'Content-Type': 'application/json'},
-        body: json.encode({'wisp_id': wisp['id'], 'user_id': _userId}),
-      );
+      await ApiService.post('/api/wisp/collect', {'wisp_id': wisp['id'], 'user_id': _userId});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✨ Wisp collected! +${wisp['xp'] ?? 10} XP'),
+            content: Text('✨ Wisp collected! +${wisp['credits'] ?? 5} Spazz Coins'),
             backgroundColor: const Color(0xFF7C3AED),
             duration: const Duration(seconds: 2),
           ),
@@ -391,17 +564,31 @@ class _MapScreenState extends State<MapScreen> {
               : GoogleMap(
                   initialCameraPosition: CameraPosition(
                     target: LatLng(_myPosition!.latitude, _myPosition!.longitude),
-                    zoom: 15.5,
+                    zoom: 18.0,
+                    tilt: 65.0,
+                    bearing: _heading,
                   ),
                   onMapCreated: (c) => _mapController = c,
                   markers: _markers,
                   circles: allCircles,
-                  myLocationEnabled: true,
+                  myLocationEnabled: false, // Use custom radar arrow
                   myLocationButtonEnabled: false,
                   zoomControlsEnabled: false,
                   mapType: MapType.normal,
                   style: _darkMapStyle,
                 ),
+
+          // ── SPAZZ RADAR OVERLAY ──────────────────────────────────
+          if (_myPosition != null)
+            IgnorePointer(
+              child: Center(
+                child: SpazzRadar(
+                  intensity: _isHunting ? _intensity : 0.1,
+                  showLightning: _isHunting && _intensity > 0.7,
+                  heading: _heading,
+                ),
+              ),
+            ),
 
           // ── TOP BAR ──────────────────────────────────────────────
           SafeArea(
@@ -549,6 +736,23 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           ),
+
+          // ── SPAZZ FLASH OVERLAY ──────────────────────────────────
+          if (_showSpazzFlash)
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: _showSpazzFlash ? 0.8 : 0.0,
+                duration: const Duration(milliseconds: 100),
+                child: Container(
+                  color: Colors.white,
+                  child: const Center(
+                    child: Text('MATCH NEARBY!', 
+                      style: TextStyle(color: Colors.black, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

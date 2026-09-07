@@ -15,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   Map<String, dynamic> _userData = {};
+  Map<String, dynamic> _prefs = {};
   List<dynamic> _leaderboard = [];
   bool _loading = true;
 
@@ -25,16 +26,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   Future<void> _loadUserData() async {
-    // Set loading state initially
     setState(() => _loading = true);
+    
+    // Load preferences for broadcasting state
+    final prefs = await AuthService.getPreferences();
 
     // --- DEVELOPMENT MOCK OVERRIDE ---
-    // Simulating a delay so it feels natural, then serving local data directly
     await Future.delayed(const Duration(milliseconds: 250));
 
     if (mounted) {
       setState(() {
-        // Populates all dashboard card fields perfectly
+        _prefs = prefs;
         _userData = {
           "username": "ben",
           "wisp_coins": 45,
@@ -45,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
           "wisps_collected": 12,
         };
 
-        // Populates your leaderboard rows cleanly
         _leaderboard = [
           {"username": "ben", "xp": 120},
           {"username": "ShadowHunter", "xp": 95},
@@ -55,7 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
         _loading = false;
       });
     }
-    // ----------------------------------
+  }
+
+  Future<void> _toggleSpazzMode() async {
+    final newState = !(_prefs['is_broadcasting'] ?? false);
+    await AuthService.updatePreferences(isBroadcasting: newState);
+    setState(() {
+      _prefs['is_broadcasting'] = newState;
+    });
   }
 
   @override
@@ -63,9 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final screens = [
       _DashboardTab(
         userData: _userData,
+        prefs: _prefs,
         leaderboard: _leaderboard,
         loading: _loading,
         onRefresh: _loadUserData,
+        onToggleSpazz: _toggleSpazzMode,
       ),
       const ChatScreen(),
       const ShopScreen(),
@@ -101,15 +111,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _DashboardTab extends StatelessWidget {
   final Map<String, dynamic> userData;
+  final Map<String, dynamic> prefs;
   final List<dynamic> leaderboard;
   final bool loading;
   final VoidCallback onRefresh;
+  final VoidCallback onToggleSpazz;
 
   const _DashboardTab({
     required this.userData,
+    required this.prefs,
     required this.leaderboard,
     required this.loading,
     required this.onRefresh,
+    required this.onToggleSpazz,
   });
 
   @override
@@ -121,6 +135,7 @@ class _DashboardTab extends StatelessWidget {
     final level = userData['level'] ?? 1;
     final calories = (userData['calories'] ?? 0.0).toStringAsFixed(0);
     final xpProgress = (xp % 100) / 100.0;
+    final isBroadcasting = prefs['is_broadcasting'] ?? false;
 
     return SafeArea(
       child: RefreshIndicator(
@@ -225,18 +240,61 @@ class _DashboardTab extends StatelessWidget {
                     ),
                     const SizedBox(height: SpazzTheme.spacing20),
 
+                    // Start Spazz Button
+                    GestureDetector(
+                      onTap: onToggleSpazz,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing20),
+                        decoration: BoxDecoration(
+                          gradient: isBroadcasting ? SpazzTheme.gradientPrimary : null,
+                          color: isBroadcasting ? null : SpazzTheme.bgTertiary,
+                          borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
+                          border: isBroadcasting ? null : Border.all(color: SpazzTheme.borderDark, width: 2),
+                          boxShadow: isBroadcasting ? [
+                            BoxShadow(color: SpazzTheme.accentPurple.withValues(alpha: 0.5), blurRadius: 15, spreadRadius: 2)
+                          ] : [],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              isBroadcasting ? '📡 BROADCASTING SIGNAL' : 'Start Spazz',
+                              style: TextStyle(
+                                color: isBroadcasting ? Colors.white : SpazzTheme.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              isBroadcasting ? 'Searching for matched paths...' : 'Tap to start hunting for matches',
+                              style: TextStyle(
+                                color: isBroadcasting ? Colors.white.withValues(alpha: 0.8) : SpazzTheme.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: SpazzTheme.spacing16),
+
                     // Hunt button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () => context.go('/hunt'),
                         icon: const Icon(Icons.radar, color: Colors.white),
-                        label: const Text('Start Hunting',
+                        label: const Text('Open Radar',
                             style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: SpazzTheme.accentPurple,
+                          backgroundColor: SpazzTheme.bgSecondary,
                           padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
+                            side: const BorderSide(color: SpazzTheme.accentPurple),
+                          ),
                         ),
                       ),
                     ),

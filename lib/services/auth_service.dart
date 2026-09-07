@@ -5,22 +5,44 @@ class AuthService {
   static bool _isAuthenticated = false;
 
   static Future<void> _loadFromStorage() async {
-    // --- DEVELOPMENT OVERRIDE ---
-    // This forces your local storage to always be authenticated as 'ben'
     final prefs = await SharedPreferences.getInstance();
-    _currentUsername = 'ben';
-    _isAuthenticated = true;
-    
-    await prefs.setString('auth_username', 'ben');
-    await prefs.setBool('auth_is_authenticated', true);
-    await prefs.setString('token', 'demo-token'); 
-    await prefs.setString('user_id', 'ben');
-    return;
-    // ----------------------------
+    _currentUsername = prefs.getString('auth_username');
+    _isAuthenticated = prefs.getBool('auth_is_authenticated') ?? false;
+  }
+
+  static Future<Map<String, dynamic>> getPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'gender': prefs.getString('pref_gender') ?? 'Not Set',
+      'age': prefs.getInt('pref_age') ?? 18,
+      'interested_in': prefs.getString('pref_interested_in') ?? 'Both',
+      'min_age': prefs.getInt('pref_min_age') ?? 18,
+      'max_age': prefs.getInt('pref_max_age') ?? 99,
+      'is_broadcasting': prefs.getBool('pref_is_broadcasting') ?? false,
+    };
+  }
+
+  static Future<void> updatePreferences({
+    String? gender,
+    int? age,
+    String? interestedIn,
+    int? minAge,
+    int? maxAge,
+    bool? isBroadcasting,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (gender != null) await prefs.setString('pref_gender', gender);
+    if (age != null) await prefs.setInt('pref_age', age);
+    if (interestedIn != null) await prefs.setString('pref_interested_in', interestedIn);
+    if (minAge != null) await prefs.setInt('pref_min_age', minAge);
+    if (maxAge != null) await prefs.setInt('pref_max_age', maxAge);
+    if (isBroadcasting != null) await prefs.setBool('pref_is_broadcasting', isBroadcasting);
   }
 
   static Future<bool> login(String email, String password) async {
-    final username = email.trim().isEmpty ? 'ben' : email.trim();
+    final username = email.trim();
+    if (username.isEmpty) return false;
+
     final prefs = await SharedPreferences.getInstance();
 
     _currentUsername = username;
@@ -34,7 +56,9 @@ class AuthService {
   }
 
   static Future<bool> register(String email, String password) async {
-    final username = email.trim().isEmpty ? 'ben' : email.trim();
+    final username = email.trim();
+    if (username.isEmpty) return false;
+
     final prefs = await SharedPreferences.getInstance();
 
     _currentUsername = username;
@@ -50,24 +74,32 @@ class AuthService {
   static Future<void> signInWithGoogle() async {
     final prefs = await SharedPreferences.getInstance();
 
-    _currentUsername = 'ben';
+    _currentUsername = 'google-user'; // Simulated google user
     _isAuthenticated = true;
 
     await prefs.setString('auth_username', _currentUsername!);
     await prefs.setBool('auth_is_authenticated', true);
     await prefs.setString('token', 'demo-token');
-    await prefs.setString('user_id', 'ben');
+    await prefs.setString('user_id', 'google-user');
   }
 
   static Future<String?> getUsername() async {
-    await _loadFromStorage();
+    if (_currentUsername == null) {
+      await _loadFromStorage();
+    }
     return _currentUsername;
   }
 
   static Future<void> clearSession() async {
-    // Disabled during testing so it doesn't wipe our forced auth block
-    _currentUsername = 'ben';
-    _isAuthenticated = true;
+    final prefs = await SharedPreferences.getInstance();
+    _currentUsername = null;
+    _isAuthenticated = false;
+    await prefs.setString('auth_username', ''); // Using empty string instead of remove to ensure it exists if requested, or just remove and handle null
+    await prefs.setBool('auth_is_authenticated', false);
+    await prefs.remove('token');
+    await prefs.remove('user_id');
+    // Actually, to match the test's expectation of prefs.getString(...) being null, we should remove it.
+    await prefs.remove('auth_username');
   }
 
   static Future<bool> get isAuthenticated async {
