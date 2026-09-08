@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 import '../design/spazz_theme.dart';
-import 'chat_screen.dart';
+import '../services/auth_service.dart';
+import 'friends_screen.dart';
 import 'profile_screen.dart';
 import 'shop_screen.dart';
 
@@ -59,11 +61,67 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _toggleSpazzMode() async {
+    final homeAddress = _prefs['home_address'] ?? '';
+    if (homeAddress.isEmpty) {
+      _showSafetyWarning('Home Address Required', 'Important: Enter your home address in Profile to protect yourself. Spazz will be unable to be initialized without a safe zone set.');
+      return;
+    }
+
     final newState = !(_prefs['is_broadcasting'] ?? false);
+    
+    if (newState) {
+      // Check if user is currently at home
+      try {
+        final pos = await Geolocator.getCurrentPosition();
+        final homeLat = _prefs['home_lat'] ?? 0.0;
+        final homeLng = _prefs['home_lng'] ?? 0.0;
+        final radius = _prefs['geofence_radius'] ?? 250.0;
+
+        if (homeLat != 0.0 && homeLng != 0.0) {
+          final dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, homeLat, homeLng);
+          if (dist < radius) {
+            _showSafetyWarning('In Safe Zone', 'You are currently within your Home Safe Zone. Spazz broadcasting is disabled here for your privacy.');
+            return;
+          }
+        }
+      } catch (_) {}
+    }
+
     await AuthService.updatePreferences(isBroadcasting: newState);
     setState(() {
       _prefs['is_broadcasting'] = newState;
     });
+  }
+
+  void _showSafetyWarning(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: SpazzTheme.bgSecondary,
+        title: Row(
+          children: [
+            const Icon(Icons.security, color: SpazzTheme.errorRed),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(color: SpazzTheme.errorRed)),
+          ],
+        ),
+        content: Text(message, style: const TextStyle(color: SpazzTheme.textPrimary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+          if (title == 'Home Address Required')
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 3); // Go to Profile
+              },
+              child: const Text('Go to Profile'),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -77,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: _loadUserData,
         onToggleSpazz: _toggleSpazzMode,
       ),
-      const ChatScreen(),
+      const FriendsScreen(),
       const ShopScreen(),
       const ProfileScreen(),
     ];
@@ -280,7 +338,7 @@ class _DashboardTab extends StatelessWidget {
                     ),
                     const SizedBox(height: SpazzTheme.spacing16),
 
-                    // Hunt button
+                    // Open Radar button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -294,6 +352,44 @@ class _DashboardTab extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
                             side: const BorderSide(color: SpazzTheme.accentPurple),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: SpazzTheme.spacing16),
+
+                    // AI Dating Coach button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.go('/coach'),
+                        icon: const Icon(Icons.psychology, color: SpazzTheme.accentCyan),
+                        label: const Text('AI Dating Coach',
+                            style: TextStyle(color: SpazzTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
+                          side: const BorderSide(color: SpazzTheme.accentCyan),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: SpazzTheme.spacing16),
+
+                    // Bless a Wisp button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.go('/bless-wisp'),
+                        icon: const Icon(Icons.stars, color: Colors.black),
+                        label: const Text('Bless a Wisp (Pin Money)',
+                            style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
                           ),
                         ),
                       ),

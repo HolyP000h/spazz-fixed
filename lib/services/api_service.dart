@@ -7,10 +7,72 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const String _baseUrl = 'https://www.spazzapp.com';
 
+  // --- MOCK DATABASE ---
+  static final List<Map<String, dynamic>> _friends = [];
+  static final Map<String, List<Map<String, dynamic>>> _messagesByFriend = {};
+  static final List<Map<String, dynamic>> _droppedNotes = [];
+  static final List<Map<String, dynamic>> _blessedWisps = [];
+  // ---------------------
+
   static Future<dynamic> get(String path, {Map<String, String>? headers}) async {
     // --- DEVELOPMENT MOCK SYSTEM ---
-    // Intercept requests locally to prevent 401/404 server blocks
     
+    if (path.contains('/api/friends')) {
+      return {"friends": _friends};
+    }
+
+    if (path.contains('/api/chat/')) {
+      final friendId = path.split('/').last;
+      return {"messages": _messagesByFriend[friendId] ?? []};
+    }
+
+    if (path.contains('/api/notes/nearby')) {
+      return {"notes": _droppedNotes};
+    }
+
+    if (path.contains('/api/wisps/blessed')) {
+      return {"wisps": _blessedWisps};
+    }
+
+    if (path.contains('/api/coach/status')) {
+      return {
+        "main_nudge": "Hey it's nice outside, it's the weekend lets go for a walk get some sun little by little we can be better than ever! Lets make today the 1st day of our new lives.",
+        "pinpoints": [
+          "Remember to smile more! Your energy is great, but a smile opens doors.",
+          "Keep it fresh! A sharp outfit makes you demand attention when you go out.",
+          "Work on US so when we find OURS we will be ready!"
+        ],
+        "goals": [
+          {
+            "title": "Stay Spazz-Ready",
+            "description": "Walk 2 miles today to keep your energy high.",
+            "progress": 0.65
+          },
+          {
+            "title": "Character Building",
+            "description": "Complete 3 encounters this week.",
+            "progress": 0.33
+          }
+        ]
+      };
+    }
+
+    if (path.contains('/api/encounter/feedback')) {
+      return {"status": "success", "message": "Feedback processed by Coach AI"};
+    }
+
+    if (path.contains('/api/me')) {
+      return {
+        "username": "ben",
+        "level": 1,
+        "xp": 35,
+        "steps": 4820,
+        "credits": 45,
+        "wisps_collected": 12,
+        "is_premium": true
+      };
+    }
+
     if (path.contains('/api/user/')) {
       return {
         "username": "ben",
@@ -76,6 +138,52 @@ class ApiService {
     // --- DEVELOPMENT MOCK SYSTEM ---
     print("ApiService MOCK POST Intercepted: $path");
     
+    if (path.contains('/api/friends/add')) {
+      final friend = body as Map<String, dynamic>;
+      if (!_friends.any((f) => f['id'] == friend['id'])) {
+        _friends.add({
+          ...friend,
+          'met_at': DateTime.now().toIso8601String(),
+        });
+      }
+      return {"status": "success"};
+    }
+
+    if (path.contains('/api/chat/send')) {
+      final data = body as Map<String, dynamic>;
+      final friendId = data['friend_id'];
+      final message = {
+        'username': 'ben', // assuming current user
+        'message': data['message'],
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      _messagesByFriend.putIfAbsent(friendId, () => []).add(message);
+      return {"status": "success", "message": message};
+    }
+
+    if (path.contains('/api/notes/drop')) {
+      final note = body as Map<String, dynamic>;
+      _droppedNotes.add({
+        ...note,
+        'id': 'note_${DateTime.now().millisecondsSinceEpoch}',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      return {"status": "success"};
+    }
+
+    if (path.contains('/api/wisp/bless')) {
+      final data = body as Map<String, dynamic>;
+      _blessedWisps.add({
+        'id': 'blessed_${DateTime.now().millisecondsSinceEpoch}',
+        'lat': data['lat'],
+        'lng': data['lng'],
+        'cash_value': data['amount'],
+        'message': data['message'] ?? 'A blessing for you!',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      return {"status": "success"};
+    }
+
     if (path.contains('/api/location/update')) {
       return {"status": "success", "message": "Location mocked successfully"};
     }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spazz_fixed/screens/map_screen.dart';
-import 'package:spazz_fixed/services/auth_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +19,7 @@ void main() {
     });
   });
 
-  testWidgets('MapScreen triggers Spazz Alert when match is nearby', (WidgetTester tester) async {
-    // Note: This test requires mocking Geolocator and ApiService more deeply for a full integration test.
-    // However, we can verify the widget renders and initial state is correct.
-    
+  testWidgets('MapScreen renders correctly', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: MapScreen()));
     
     // Initial loading state
@@ -30,9 +27,7 @@ void main() {
     
     await tester.pumpAndSettle();
     
-    // Verify Radar is present when location is "found" (simulated by settling)
-    // Since we can't easily simulate movement in a simple widget test without dependency injection,
-    // we verify the components exist.
+    // Verify GoogleMap exists
     expect(find.byType(GoogleMap), findsOneWidget);
   });
 }

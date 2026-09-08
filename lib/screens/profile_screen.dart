@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../design/spazz_theme.dart';
@@ -37,7 +38,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _updatePref(String key, dynamic value) async {
-    final Map<String, dynamic> update = {key: value};
     await AuthService.updatePreferences(
       gender: key == 'gender' ? value : null,
       age: key == 'age' ? value : null,
@@ -45,6 +45,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       minAge: key == 'min_age' ? value : null,
       maxAge: key == 'max_age' ? value : null,
       isBroadcasting: key == 'is_broadcasting' ? value : null,
+      homeAddress: key == 'home_address' ? value : null,
+      geofenceRadius: key == 'geofence_radius' ? value : null,
     );
     setState(() {
       _prefs[key] = value;
@@ -117,9 +119,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       
                       const SizedBox(height: SpazzTheme.spacing16),
                       _ageSlider(),
+
+                      const SizedBox(height: SpazzTheme.spacing32),
+
+                      // Safety Settings Section
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('SAFETY & PRIVACY', style: TextStyle(
+                          color: SpazzTheme.errorRed, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2,
+                        )),
+                      ),
+                      const SizedBox(height: SpazzTheme.spacing12),
+                      Container(
+                        padding: const EdgeInsets.all(SpazzTheme.spacing16),
+                        decoration: BoxDecoration(
+                          color: SpazzTheme.errorRed.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
+                          border: Border.all(color: SpazzTheme.errorRed.withValues(alpha: 0.3)),
+                        ),
+                        child: const Column(
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: SpazzTheme.errorRed, size: 20),
+                                SizedBox(width: 8),
+                                Text('IMPORTANT', style: TextStyle(color: SpazzTheme.errorRed, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Enter your home address to protect yourself. Spazz broadcasting will be automatically disabled when you are within your Safe Zone.',
+                              style: TextStyle(color: SpazzTheme.textPrimary, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: SpazzTheme.spacing16),
+
+                      _homeAddressTile(),
+                      const SizedBox(height: SpazzTheme.spacing16),
+                      _geofenceSlider(),
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _homeAddressTile() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing16, vertical: SpazzTheme.spacing12),
+      decoration: BoxDecoration(
+        color: SpazzTheme.bgSecondary,
+        borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
+        border: Border.all(color: SpazzTheme.borderDark),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Home Address', style: TextStyle(color: SpazzTheme.textSecondary, fontSize: 12)),
+              TextButton.icon(
+                onPressed: _setHomeToCurrent,
+                icon: const Icon(Icons.my_location, size: 14),
+                label: const Text('Set Current', style: TextStyle(fontSize: 11)),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              ),
+            ],
+          ),
+          TextField(
+            onChanged: (v) => _updatePref('home_address', v),
+            controller: TextEditingController(text: _prefs['home_address'])..selection = TextSelection.fromPosition(TextPosition(offset: (_prefs['home_address'] ?? '').length)),
+            style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.bold),
+            decoration: const InputDecoration(
+              hintText: 'Enter your address',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setHomeToCurrent() async {
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      await AuthService.updatePreferences(
+        homeLat: pos.latitude,
+        homeLng: pos.longitude,
+        homeAddress: 'Current Location',
+      );
+      setState(() {
+        _prefs['home_lat'] = pos.latitude;
+        _prefs['home_lng'] = pos.longitude;
+        _prefs['home_address'] = 'Current Location';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Home location set to current position!'), backgroundColor: SpazzTheme.successGreen),
+        );
+      }
+    } catch (_) {
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to get location'), backgroundColor: SpazzTheme.errorRed),
+        );
+      }
+    }
+  }
+
+  Widget _geofenceSlider() {
+    double radius = (_prefs['geofence_radius'] ?? 250.0).toDouble();
+    return Container(
+      padding: const EdgeInsets.all(SpazzTheme.spacing16),
+      decoration: BoxDecoration(
+        color: SpazzTheme.bgSecondary,
+        borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
+        border: Border.all(color: SpazzTheme.borderDark),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Safe Zone Radius', style: TextStyle(color: SpazzTheme.textSecondary)),
+              Text('${radius.toInt()} meters', style: const TextStyle(color: SpazzTheme.errorRed, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Recommended: 250m - 500m to account for GPS drift.',
+            style: TextStyle(color: SpazzTheme.textTertiary, fontSize: 11),
+          ),
+          Slider(
+            value: radius,
+            min: 100,
+            max: 1000,
+            divisions: 18,
+            activeColor: SpazzTheme.errorRed,
+            inactiveColor: SpazzTheme.bgTertiary,
+            onChanged: (v) => _updatePref('geofence_radius', v),
+          ),
+        ],
+      ),
     );
   }
 

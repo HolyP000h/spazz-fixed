@@ -6,12 +6,14 @@ class SpazzRadar extends StatefulWidget {
   final double intensity; // 0.0 to 1.0 (1.0 is closest)
   final bool showLightning;
   final double heading; // in degrees
+  final Color? color;
 
   const SpazzRadar({
     super.key,
     required this.intensity,
     required this.showLightning,
     this.heading = 0,
+    this.color,
   });
 
   @override
@@ -59,6 +61,7 @@ class _SpazzRadarState extends State<SpazzRadar> with SingleTickerProviderStateM
             intensity: widget.intensity,
             showLightning: widget.showLightning,
             heading: widget.heading,
+            baseColor: widget.color,
           ),
         );
       },
@@ -71,18 +74,22 @@ class RadarPainter extends CustomPainter {
   final double intensity;
   final bool showLightning;
   final double heading;
+  final Color? baseColor;
 
   RadarPainter({
     required this.pulseProgress,
     required this.intensity,
     required this.showLightning,
     required this.heading,
+    this.baseColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final maxRadius = size.width / 2;
+    final accentColor = baseColor ?? SpazzTheme.accentCyan;
+    final ringColor = baseColor ?? SpazzTheme.accentPurple;
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -90,14 +97,14 @@ class RadarPainter extends CustomPainter {
 
     // 1. Draw Static Rings
     for (int i = 1; i <= 3; i++) {
-      paint.color = SpazzTheme.accentPurple.withValues(alpha: 0.1 * i);
+      paint.color = ringColor.withValues(alpha: 0.1 * i);
       canvas.drawCircle(center, maxRadius * (i / 3), paint);
     }
 
     // 2. Draw Pulsing Wave
     final pulseRadius = maxRadius * pulseProgress;
     final pulseOpacity = (1.0 - pulseProgress).clamp(0.0, 1.0);
-    paint.color = SpazzTheme.accentCyan.withValues(alpha: pulseOpacity * (0.3 + intensity * 0.7));
+    paint.color = accentColor.withValues(alpha: pulseOpacity * (0.3 + intensity * 0.7));
     paint.strokeWidth = 4.0 + (intensity * 6.0);
     canvas.drawCircle(center, pulseRadius, paint);
 
@@ -145,7 +152,7 @@ class RadarPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final glowPaint = Paint()
-      ..color = SpazzTheme.accentCyan
+      ..color = baseColor ?? SpazzTheme.accentCyan
       ..strokeWidth = 4.0
       ..style = PaintingStyle.stroke
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);

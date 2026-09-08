@@ -19,6 +19,10 @@ class AuthService {
       'min_age': prefs.getInt('pref_min_age') ?? 18,
       'max_age': prefs.getInt('pref_max_age') ?? 99,
       'is_broadcasting': prefs.getBool('pref_is_broadcasting') ?? false,
+      'home_address': prefs.getString('pref_home_address') ?? '',
+      'home_lat': prefs.getDouble('pref_home_lat') ?? 0.0,
+      'home_lng': prefs.getDouble('pref_home_lng') ?? 0.0,
+      'geofence_radius': prefs.getDouble('pref_geofence_radius') ?? 250.0,
     };
   }
 
@@ -29,6 +33,10 @@ class AuthService {
     int? minAge,
     int? maxAge,
     bool? isBroadcasting,
+    String? homeAddress,
+    double? homeLat,
+    double? homeLng,
+    double? geofenceRadius,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     if (gender != null) await prefs.setString('pref_gender', gender);
@@ -37,6 +45,20 @@ class AuthService {
     if (minAge != null) await prefs.setInt('pref_min_age', minAge);
     if (maxAge != null) await prefs.setInt('pref_max_age', maxAge);
     if (isBroadcasting != null) await prefs.setBool('pref_is_broadcasting', isBroadcasting);
+    if (homeAddress != null) await prefs.setString('pref_home_address', homeAddress);
+    if (homeLat != null) await prefs.setDouble('pref_home_lat', homeLat);
+    if (homeLng != null) await prefs.setDouble('pref_home_lng', homeLng);
+    if (geofenceRadius != null) await prefs.setDouble('pref_geofence_radius', geofenceRadius);
+  }
+
+  static Future<bool> isBankLinked() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('auth_bank_linked') ?? false;
+  }
+
+  static Future<void> linkBank(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auth_bank_linked', value);
   }
 
   static Future<bool> login(String email, String password) async {

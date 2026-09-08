@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spazz_fixed/services/api_service.dart';
 import 'package:spazz_fixed/services/auth_service.dart';
 import '../design/spazz_theme.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String friendId;
+  final String friendUsername;
+
+  const ChatScreen({
+    super.key,
+    required this.friendId,
+    required this.friendUsername,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -25,7 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _load() async {
     _myUsername = await AuthService.getUsername();
     try {
-      final res = await ApiService.get('/api/chat');
+      final res = await ApiService.get('/api/chat/${widget.friendId}');
       setState(() {
         _messages = List<Map<String, dynamic>>.from(res['messages'] ?? []);
         _loading = false;
@@ -40,7 +48,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _msgCtrl.clear();
     try {
-      await ApiService.post('/api/chat', {'message': text});
+      await ApiService.post('/api/chat/send', {
+        'friend_id': widget.friendId,
+        'message': text,
+      });
       _load();
     } catch (_) {}
   }
@@ -51,7 +62,11 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: SpazzTheme.bgPrimary,
       appBar: AppBar(
         backgroundColor: SpazzTheme.bgSecondary,
-        title: const Text('Chat', style: TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w700)),
+        title: Text(widget.friendUsername, style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w700)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'), // Or wherever the hub is
+        ),
       ),
       body: Column(
         children: [

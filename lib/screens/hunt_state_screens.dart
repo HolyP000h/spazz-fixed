@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../design/spazz_theme.dart';
+import '../services/api_service.dart';
 
 /// Hunt state screens representing different phases of the hunting experience
 /// These correspond to the Figma designs: screen-hunt-warm, screen-hunt-cold, etc.
@@ -391,7 +393,7 @@ class _HuntDetectedScreenState extends State<HuntDetectedScreen> with SingleTick
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, 'dismiss'),
                   icon: const Icon(Icons.close),
                   label: const Text('Dismiss'),
                   style: ElevatedButton.styleFrom(
@@ -401,7 +403,7 @@ class _HuntDetectedScreenState extends State<HuntDetectedScreen> with SingleTick
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => Navigator.pop(context, 'accept'),
                   icon: const Icon(Icons.location_on),
                   label: const Text('Send Ping'),
                   style: ElevatedButton.styleFrom(
@@ -418,11 +420,13 @@ class _HuntDetectedScreenState extends State<HuntDetectedScreen> with SingleTick
 }
 
 class HuntConnectionScreen extends StatefulWidget {
+  final String connectedUserId;
   final String connectedUsername;
   final bool isPremium;
 
   const HuntConnectionScreen({
     super.key,
+    required this.connectedUserId,
     required this.connectedUsername,
     required this.isPremium,
   });
@@ -512,7 +516,14 @@ class _HuntConnectionScreenState extends State<HuntConnectionScreen> {
                   ),
                   const SizedBox(width: 16),
                   ElevatedButton.icon(
-                    onPressed: () => setState(() => _confirmed = true),
+                    onPressed: () async {
+                      await ApiService.post('/api/friends/add', {
+                        'id': widget.connectedUserId,
+                        'username': widget.connectedUsername,
+                        'is_premium': widget.isPremium,
+                      });
+                      setState(() => _confirmed = true);
+                    },
                     icon: const Icon(Icons.check_circle),
                     label: const Text('Confirm'),
                   ),
@@ -527,8 +538,11 @@ class _HuntConnectionScreenState extends State<HuntConnectionScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Start Chatting'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.go('/feedback/${widget.connectedUserId}/${widget.connectedUsername}');
+                    },
+                    child: const Text('Leave Private Feedback'),
                   ),
                 ],
               ),

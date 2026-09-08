@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'subscription_screen.dart';
 import '../widgets/ping_system.dart';
@@ -11,6 +14,9 @@ import '../widgets/spazz_radar.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'hunt_state_screens.dart';
+import '../design/spazz_theme.dart';
+
+const String _baseUrl = 'https://www.spazzapp.com';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -36,11 +42,17 @@ class _MapScreenState extends State<MapScreen> {
   List<dynamic> _nearbyUsers = [];
   List<dynamic> _wisps = [];
   List<dynamic> _hotspots = [];
+  List<dynamic> _nearbyNotes = [];
+  List<dynamic> _blessedWisps = [];
 
   // Spazz Match State
   Map<String, dynamic>? _activeMatch;
+  Map<String, dynamic>? _activeNote;
+  Map<String, dynamic>? _activeBlessedWisp;
   double? _lastDistance;
   bool _isHunting = false;
+  bool _isHuntingNote = false;
+  bool _isHuntingBlessed = false;
   Map<String, dynamic> _myPrefs = {};
   bool _showSpazzFlash = false;
   double _intensity = 0.0;
@@ -109,7 +121,11 @@ class _MapScreenState extends State<MapScreen> {
           _heading = pos.heading;
         });
         _updateCamera();
-        if (_isHunting) _updateHuntStatus();
+        if (_isHunting || _isHuntingNote || _isHuntingBlessed) {
+          _updateHuntStatus();
+        } else {
+          _checkGeofence();
+        }
       }
     });
 
@@ -141,7 +157,11 @@ class _MapScreenState extends State<MapScreen> {
       });
       await _pingLocation();
       _updateCamera();
-      if (_isHunting) _updateHuntStatus();
+      if (_isHunting || _isHuntingNote || _isHuntingBlessed) {
+        _updateHuntStatus();
+      } else {
+        _checkGeofence();
+      }
     } catch (_) {}
   }
 
@@ -152,8 +172,8 @@ class _MapScreenState extends State<MapScreen> {
         CameraPosition(
           target: LatLng(_myPosition!.latitude, _myPosition!.longitude),
           zoom: 18.0,
-          tilt: 65.0, // 1st person tilt
-          bearing: _heading, // Follow heading
+          tilt: 65.0, 
+          bearing: _heading,
         ),
       ),
     );
@@ -185,8 +205,6 @@ class _MapScreenState extends State<MapScreen> {
       
       if (res != null) {
         final users = (res['users'] as List?) ?? [];
-        
-        // Offset mock users so they aren't exactly on top of us if 0.0
         final processedUsers = users.map((u) {
           if (u['lat'] == 0.0) {
             u['lat'] = _myPosition!.latitude + 0.0003;
@@ -201,6 +219,20 @@ class _MapScreenState extends State<MapScreen> {
           _hotspots = res['hotspots'] ?? [];
         });
         
+        final notesRes = await ApiService.get('/api/notes/nearby');
+        if (notesRes != null) {
+          setState(() {
+            _nearbyNotes = (notesRes['notes'] as List?) ?? [];
+          });
+        }
+
+        final blessedRes = await ApiService.get('/api/wisps/blessed');
+        if (blessedRes != null) {
+          setState(() {
+            _blessedWisps = (blessedRes['wisps'] as List?) ?? [];
+          });
+        }
+
         _buildMarkers();
         _checkForMatches();
       }
@@ -210,7 +242,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _checkForMatches() async {
-    if (_isHunting || _myPosition == null) return;
+    if (_isHunting || _isHuntingNote || _isHuntingBlessed || _myPosition == null) return;
 
     for (var user in _nearbyUsers) {
       final genderMatch = _myPrefs['interested_in'] == 'Both' || user['gender'] == _myPrefs['interested_in'];
@@ -224,9 +256,79 @@ class _MapScreenState extends State<MapScreen> {
 
         if (dist < 50) {
           _triggerSpazzAlert(user);
-          break;
+          return;
         }
       }
+    }
+
+    for (var note in _nearbyNotes) {
+      if (note['to_user_id'] == _userId) {
+        double dist = Geolocator.distanceBetween(
+          _myPosition!.latitude, _myPosition!.longitude, 
+          note['lat'], note['lng']
+        );
+
+        if (dist < 30) { 
+          _triggerNoteAlert(note);
+          return;
+        }
+      }
+    }
+
+    for (var wisp in _blessedWisps) {
+      double dist = Geolocator.distanceBetween(
+        _myPosition!.latitude, _myPosition!.longitude, 
+        wisp['lat'], wisp['lng']
+      );
+
+      if (dist < 40) {
+        _triggerBlessedAlert(wisp);
+        return;
+      }
+    }
+  }
+
+  void _triggerBlessedAlert(Map<String, dynamic> wisp) async {
+    setState(() => _isHuntingBlessed = true);
+    for (int i = 0; i < 3; i++) {
+      HapticFeedback.vibrate();
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('💰 BLESSED WISP SIGNAL DETECTED! VALUE: \$${wisp['cash_value']}'),
+          backgroundColor: Colors.amber,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      setState(() {
+        _activeBlessedWisp = wisp;
+      });
+      _updateHuntStatus();
+    }
+  }
+
+  void _triggerNoteAlert(Map<String, dynamic> note) async {
+    setState(() => _isHuntingNote = true);
+    for (int i = 0; i < 2; i++) {
+      HapticFeedback.mediumImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('💖 LOVE NOTE SIGNAL DETECTED FROM ${note['to_username']}!'),
+          backgroundColor: Colors.pinkAccent,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      setState(() {
+        _activeNote = note;
+      });
+      _updateHuntStatus();
     }
   }
 
@@ -240,14 +342,18 @@ class _MapScreenState extends State<MapScreen> {
     if (mounted) setState(() => _showSpazzFlash = false);
 
     if (mounted) {
-      showDialog(
+      final result = await showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (_) => HuntDetectedScreen(
           detectedUsername: user['username'], 
           isPremium: user['is_premium'] ?? false
         ),
-      ).then((_) => _startHunt(user));
+      );
+      
+      if (result == 'accept') {
+        _startHunt(user);
+      }
     }
   }
 
@@ -259,12 +365,46 @@ class _MapScreenState extends State<MapScreen> {
     _updateHuntStatus();
   }
 
+  void _checkGeofence() async {
+    if (_myPosition == null) return;
+    
+    final homeLat = _myPrefs['home_lat'] ?? 0.0;
+    final homeLng = _myPrefs['home_lng'] ?? 0.0;
+    final radius = _myPrefs['geofence_radius'] ?? 250.0;
+
+    if (homeLat != 0.0 && homeLng != 0.0) {
+      final dist = Geolocator.distanceBetween(_myPosition!.latitude, _myPosition!.longitude, homeLat, homeLng);
+      if (dist < radius && (_myPrefs['is_broadcasting'] ?? false)) {
+        await AuthService.updatePreferences(isBroadcasting: false);
+        setState(() {
+          _myPrefs['is_broadcasting'] = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Safe Zone Entered: Spazz broadcasting disabled for your privacy.'),
+              backgroundColor: SpazzTheme.errorRed,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _updateHuntStatus() {
-    if (!_isHunting || _activeMatch == null || _myPosition == null) return;
+    if ((!_isHunting && !_isHuntingNote && !_isHuntingBlessed) || _myPosition == null) {
+      _checkGeofence();
+      return;
+    }
+
+    final target = _isHunting 
+      ? _activeMatch 
+      : (_isHuntingNote ? _activeNote : _activeBlessedWisp);
+    if (target == null) return;
 
     double dist = Geolocator.distanceBetween(
       _myPosition!.latitude, _myPosition!.longitude, 
-      _activeMatch!['lat'], _activeMatch!['lng']
+      target['lat'], target['lng']
     );
 
     setState(() {
@@ -274,7 +414,6 @@ class _MapScreenState extends State<MapScreen> {
     bool isCloser = _lastDistance == null || dist < _lastDistance!;
     _lastDistance = dist;
 
-    // Trigger directional haptics
     if (isCloser) {
       HapticFeedback.mediumImpact();
     } else {
@@ -282,16 +421,117 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     if (dist < 5) {
-      _completeEncounter();
+      if (_isHunting) {
+        _completeEncounter();
+      } else if (_isHuntingNote) {
+        _collectLoveNote();
+      } else {
+        _collectBlessedWisp();
+      }
     } else {
-      // Show hot/cold overlay
       _showHuntOverlay(dist, isCloser);
     }
   }
 
+  void _collectBlessedWisp() async {
+    final wisp = _activeBlessedWisp;
+    setState(() {
+      _isHuntingBlessed = false;
+      _activeBlessedWisp = null;
+      _intensity = 0.0;
+    });
+
+    for (int i = 0; i < 5; i++) {
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 80));
+    }
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: SpazzTheme.bgSecondary,
+          title: const Row(
+            children: [
+              Text('✨ Wisp Blessed You!', style: TextStyle(color: Colors.amber)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Someone pinned actual money to this spot for you to find!', style: TextStyle(color: SpazzTheme.textSecondary, fontSize: 13)),
+              const SizedBox(height: 16),
+              Text('\$${wisp?['cash_value']}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.amber)),
+              const SizedBox(height: 12),
+              Text('"${wisp?['message']}"', style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
+              const SizedBox(height: 24),
+              const Text('The funds have been added to your Spazz Wallet.', style: TextStyle(color: SpazzTheme.accentCyan, fontSize: 12)),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
+              child: const Text('Awesome!'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _collectLoveNote() async {
+    final note = _activeNote;
+    setState(() {
+      _isHuntingNote = false;
+      _activeNote = null;
+      _intensity = 0.0;
+    });
+
+    for (int i = 0; i < 4; i++) {
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: SpazzTheme.bgSecondary,
+          title: const Row(
+            children: [
+              Text('💖 Love Note Found!', style: TextStyle(color: Colors.pinkAccent)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Message from ${note?['to_username']}:', style: const TextStyle(color: SpazzTheme.textSecondary, fontSize: 12)),
+              const SizedBox(height: 12),
+              Text('"${note?['message']}"', style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic)),
+              const SizedBox(height: 20),
+              const Text('✨ +10 Spazz Coins Collected!', style: TextStyle(color: SpazzTheme.accentCyan, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.go('/home');
+              },
+              child: const Text('Go to Hub'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   void _showHuntOverlay(double dist, bool isCloser) {
-    // In a real app, this might be a persistent overlay. 
-    // For this prototype, we'll use a snackbar or a temporary dialog if not already shown.
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -311,7 +551,6 @@ class _MapScreenState extends State<MapScreen> {
       _intensity = 0.0;
     });
     
-    // BAM - Face to face intense haptics
     for (int i = 0; i < 8; i++) {
       HapticFeedback.vibrate();
       await Future.delayed(const Duration(milliseconds: 50));
@@ -321,6 +560,7 @@ class _MapScreenState extends State<MapScreen> {
       showDialog(
         context: context,
         builder: (_) => HuntConnectionScreen(
+          connectedUserId: _activeMatch!['id'] ?? 'unknown',
           connectedUsername: _activeMatch!['username'], 
           isPremium: _activeMatch!['is_premium'] ?? false
         ),
@@ -344,7 +584,6 @@ class _MapScreenState extends State<MapScreen> {
         final pings = (data['pings'] as List?) ?? [];
         for (final p in pings) {
           final ping = PingData.fromJson(p);
-          // Only show if we haven't shown it already
           final alreadyShown = _incomingPings.any((ip) => ip.id == ping.id);
           if (!alreadyShown) {
             _showIncomingPing(ping);
@@ -356,7 +595,6 @@ class _MapScreenState extends State<MapScreen> {
 
   void _showIncomingPing(PingData ping) {
     setState(() => _incomingPings.add(ping));
-    // Animate a ripple wave on the map at the ping origin
     _addPingWave(ping);
   }
 
@@ -377,7 +615,6 @@ class _MapScreenState extends State<MapScreen> {
       ));
     });
 
-    // Fade wave out after 4s
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
         setState(() => _pingWaves.removeWhere((c) => c.circleId.value == waveId));
@@ -409,7 +646,6 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     for (final user in _nearbyUsers) {
-      // Boss users get a golden hue
       final isBoss = user['is_premium'] ?? false;
       markers.add(Marker(
         markerId: MarkerId('user_${user['id']}'),
@@ -454,7 +690,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _buildMockMarkers() {
     if (_myPosition == null) return;
-    final rand = Random();
+    final rand = math.Random();
     final markers = <Marker>{};
     final circles = <Circle>{};
 
@@ -525,9 +761,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _onPingSent(PingData ping) {
-    // Animate ripple from MY position on the map
     _addPingWave(ping);
-    // Center map briefly on self
     if (_myPosition != null) {
       _mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(
@@ -571,7 +805,7 @@ class _MapScreenState extends State<MapScreen> {
                   onMapCreated: (c) => _mapController = c,
                   markers: _markers,
                   circles: allCircles,
-                  myLocationEnabled: false, // Use custom radar arrow
+                  myLocationEnabled: false, 
                   myLocationButtonEnabled: false,
                   zoomControlsEnabled: false,
                   mapType: MapType.normal,
@@ -583,9 +817,10 @@ class _MapScreenState extends State<MapScreen> {
             IgnorePointer(
               child: Center(
                 child: SpazzRadar(
-                  intensity: _isHunting ? _intensity : 0.1,
-                  showLightning: _isHunting && _intensity > 0.7,
+                  intensity: (_isHunting || _isHuntingNote || _isHuntingBlessed) ? _intensity : 0.1,
+                  showLightning: (_isHunting || _isHuntingNote || _isHuntingBlessed) && _intensity > 0.7,
                   heading: _heading,
+                  color: _isHuntingNote ? Colors.pinkAccent : (_isHuntingBlessed ? Colors.amber : null),
                 ),
               ),
             ),
@@ -596,7 +831,6 @@ class _MapScreenState extends State<MapScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  // Live users count
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
@@ -617,7 +851,6 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ),
                   const Spacer(),
-                  // Heatmap toggle
                   GestureDetector(
                     onTap: () {
                       if (!_isPremium) {
@@ -693,12 +926,7 @@ class _MapScreenState extends State<MapScreen> {
               bottom: 90,
               left: 20,
               child: GestureDetector(
-                onTap: () => _mapController?.animateCamera(
-                  CameraUpdate.newLatLngZoom(
-                    LatLng(_myPosition!.latitude, _myPosition!.longitude),
-                    15.5,
-                  ),
-                ),
+                onTap: () => _updateCamera(),
                 child: Container(
                   width: 46,
                   height: 46,
