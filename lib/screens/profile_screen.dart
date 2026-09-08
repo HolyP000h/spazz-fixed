@@ -13,6 +13,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final TextEditingController _homeAddressController = TextEditingController();
+
   Map<String, dynamic>? _user;
   Map<String, dynamic> _prefs = {};
   bool _loading = true;
@@ -23,6 +25,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _homeAddressController.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     try {
       final userRes = await ApiService.get('/api/me');
@@ -30,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _user = userRes;
         _prefs = prefRes;
+        _homeAddressController.text = (_prefs['home_address'] ?? '').toString();
         _loading = false;
       });
     } catch (_) {
@@ -165,6 +174,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _saveHomeAddress() async {
+    final value = _homeAddressController.text.trim();
+    await AuthService.updatePreferences(homeAddress: value);
+    setState(() {
+      _prefs['home_address'] = value;
+    });
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value.isEmpty ? 'Home address cleared.' : 'Home address saved.'),
+        backgroundColor: value.isEmpty ? SpazzTheme.errorRed : SpazzTheme.successGreen,
+      ),
+    );
+  }
+
   Widget _homeAddressTile() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing16, vertical: SpazzTheme.spacing12),
@@ -189,8 +215,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           TextField(
-            onChanged: (v) => _updatePref('home_address', v),
-            controller: TextEditingController(text: _prefs['home_address'])..selection = TextSelection.fromPosition(TextPosition(offset: (_prefs['home_address'] ?? '').length)),
+            controller: _homeAddressController,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _saveHomeAddress(),
             style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.bold),
             decoration: const InputDecoration(
               hintText: 'Enter your address',
@@ -198,6 +225,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _saveHomeAddress,
+              child: const Text('Save Address', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -208,15 +242,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _setHomeToCurrent() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
+      final addressText = 'Current Location';
+      _homeAddressController.text = addressText;
       await AuthService.updatePreferences(
         homeLat: pos.latitude,
         homeLng: pos.longitude,
-        homeAddress: 'Current Location',
+        homeAddress: addressText,
       );
       setState(() {
         _prefs['home_lat'] = pos.latitude;
         _prefs['home_lng'] = pos.longitude;
-        _prefs['home_address'] = 'Current Location';
+        _prefs['home_address'] = addressText;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

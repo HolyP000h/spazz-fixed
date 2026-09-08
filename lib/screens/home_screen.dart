@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import '../design/spazz_theme.dart';
 import '../services/auth_service.dart';
@@ -37,437 +36,584 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.delayed(const Duration(milliseconds: 250));
 
     if (mounted) {
-      setState(() {
-        _prefs = prefs;
-        _userData = {
-          "username": "ben",
-          "wisp_coins": 45,
-          "level": 1,
-          "xp": 35,
-          "steps": 4820,
-          "calories": 245.0,
-          "wisps_collected": 12,
-        };
+      class _DashboardTab extends StatelessWidget {
+        final Map<String, dynamic> userData;
+        final Map<String, dynamic> prefs;
+        final List<dynamic> leaderboard;
+        final bool loading;
+        final VoidCallback onRefresh;
+        final VoidCallback onToggleSpazz;
 
-        _leaderboard = [
-          {"username": "ben", "xp": 120},
-          {"username": "ShadowHunter", "xp": 95},
-          {"username": "WispMaster", "xp": 50}
-        ];
-        
-        _loading = false;
-      });
-    }
-  }
+        const _DashboardTab({
+          required this.userData,
+          required this.prefs,
+          required this.leaderboard,
+          required this.loading,
+          required this.onRefresh,
+          required this.onToggleSpazz,
+        });
 
-  Future<void> _toggleSpazzMode() async {
-    final homeAddress = _prefs['home_address'] ?? '';
-    if (homeAddress.isEmpty) {
-      _showSafetyWarning('Home Address Required', 'Important: Enter your home address in Profile to protect yourself. Spazz will be unable to be initialized without a safe zone set.');
-      return;
-    }
+        @override
+        Widget build(BuildContext context) {
+          final username = userData['username'] ?? 'Spazzer';
+          final wispCoins = userData['wisp_coins'] ?? 0;
+          final isBroadcasting = prefs['is_broadcasting'] ?? false;
 
-    final newState = !(_prefs['is_broadcasting'] ?? false);
-    
-    if (newState) {
-      // Check if user is currently at home
-      try {
-        final pos = await Geolocator.getCurrentPosition();
-        final homeLat = _prefs['home_lat'] ?? 0.0;
-        final homeLng = _prefs['home_lng'] ?? 0.0;
-        final radius = _prefs['geofence_radius'] ?? 250.0;
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final headerButtonSize = (width * 0.11).clamp(34.0, 48.0);
+              final startButtonHeight = (width * 0.14).clamp(48.0, 60.0);
+              final navPad = (width * 0.025).clamp(8.0, 16.0);
+              final cityHeight = (constraints.maxHeight * 0.72).clamp(280.0, 560.0);
+              final bottomDock = (width * 0.15).clamp(52.0, 68.0);
+              final bottomDockOffset = (width * 0.11).clamp(18.0, 38.0);
 
-        if (homeLat != 0.0 && homeLng != 0.0) {
-          final dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, homeLat, homeLng);
-          if (dist < radius) {
-            _showSafetyWarning('In Safe Zone', 'You are currently within your Home Safe Zone. Spazz broadcasting is disabled here for your privacy.');
-            return;
-          }
-        }
-      } catch (_) {}
-    }
-
-    await AuthService.updatePreferences(isBroadcasting: newState);
-    setState(() {
-      _prefs['is_broadcasting'] = newState;
-    });
-  }
-
-  void _showSafetyWarning(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: SpazzTheme.bgSecondary,
-        title: Row(
-          children: [
-            const Icon(Icons.security, color: SpazzTheme.errorRed),
-            const SizedBox(width: 8),
-            Text(title, style: const TextStyle(color: SpazzTheme.errorRed)),
-          ],
-        ),
-        content: Text(message, style: const TextStyle(color: SpazzTheme.textPrimary)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-          if (title == 'Home Address Required')
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 3); // Go to Profile
-              },
-              child: const Text('Go to Profile'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screens = [
-      _DashboardTab(
-        userData: _userData,
-        prefs: _prefs,
-        leaderboard: _leaderboard,
-        loading: _loading,
-        onRefresh: _loadUserData,
-        onToggleSpazz: _toggleSpazzMode,
-      ),
-      const FriendsScreen(),
-      const ShopScreen(),
-      const ProfileScreen(),
-    ];
-
-    return Scaffold(
-      body: screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: SpazzTheme.bgSecondary,
-          border: Border(top: BorderSide(color: SpazzTheme.borderDark)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: SpazzTheme.accentPurple,
-          unselectedItemColor: SpazzTheme.textTertiary,
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), activeIcon: Icon(Icons.chat_bubble), label: 'Chat'),
-            BottomNavigationBarItem(icon: Icon(Icons.storefront_outlined), activeIcon: Icon(Icons.storefront), label: 'Shop'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardTab extends StatelessWidget {
-  final Map<String, dynamic> userData;
-  final Map<String, dynamic> prefs;
-  final List<dynamic> leaderboard;
-  final bool loading;
-  final VoidCallback onRefresh;
-  final VoidCallback onToggleSpazz;
-
-  const _DashboardTab({
-    required this.userData,
-    required this.prefs,
-    required this.leaderboard,
-    required this.loading,
-    required this.onRefresh,
-    required this.onToggleSpazz,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final username = userData['username'] ?? 'Spazzer';
-    final wispCoins = userData['wisp_coins'] ?? 0;
-    final steps = userData['steps'] ?? 0;
-    final xp = userData['xp'] ?? 0;
-    final level = userData['level'] ?? 1;
-    final calories = (userData['calories'] ?? 0.0).toStringAsFixed(0);
-    final xpProgress = (xp % 100) / 100.0;
-    final isBroadcasting = prefs['is_broadcasting'] ?? false;
-
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: () async => onRefresh(),
-        color: SpazzTheme.accentPurple,
-        backgroundColor: SpazzTheme.bgSecondary,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(SpazzTheme.spacing16),
-          child: loading
-              ? const Center(child: CircularProgressIndicator(color: SpazzTheme.accentPurple))
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Hey, $username 👋',
-                                style: SpazzTheme.heading3.copyWith(
-                                    color: SpazzTheme.textPrimary)),
-                            const Text('Go find some wisps!',
-                                style: TextStyle(color: SpazzTheme.textSecondary, fontSize: 14)),
-                          ],
-                        ),
-                        // Wisp coin badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing12, vertical: SpazzTheme.spacing8),
-                          decoration: BoxDecoration(
-                            color: SpazzTheme.bgTertiary,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: SpazzTheme.accentPurple),
-                          ),
-                          child: Row(
-                            children: [
-                              const Text('✨', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: SpazzTheme.spacing4),
-                              Text('$wispCoins',
-                                  style: const TextStyle(
-                                      color: SpazzTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing20),
-
-                    // Level + XP bar
-                    Container(
-                      padding: const EdgeInsets.all(SpazzTheme.spacing16),
-                      decoration: BoxDecoration(
-                        color: SpazzTheme.bgTertiary,
-                        borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Level $level',
-                                  style: const TextStyle(
-                                      color: SpazzTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16)),
-                              Text('$xp XP',
-                                  style: const TextStyle(color: SpazzTheme.accentPurple, fontSize: 14)),
-                            ],
-                          ),
-                          const SizedBox(height: SpazzTheme.spacing8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(SpazzTheme.radiusSmall),
-                            child: LinearProgressIndicator(
-                              value: xpProgress,
-                              backgroundColor: SpazzTheme.bgPrimary,
-                              valueColor: const AlwaysStoppedAnimation<Color>(SpazzTheme.accentPurple),
-                              minHeight: 8,
-                            ),
-                          ),
-                          const SizedBox(height: SpazzTheme.spacing4),
-                          Text('${((1 - xpProgress) * 100).toInt()} XP to next level',
-                              style: const TextStyle(color: SpazzTheme.textSecondary, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing16),
-
-                    // Stats row
-                    Row(
-                      children: [
-                        _StatCard(icon: '👟', label: 'Steps', value: '$steps'),
-                        const SizedBox(width: SpazzTheme.spacing12),
-                        _StatCard(icon: '🔥', label: 'Calories', value: calories),
-                        const SizedBox(width: SpazzTheme.spacing12),
-                        _StatCard(icon: '✨', label: 'Wisps', value: '${userData['wisps_collected'] ?? 0}'),
-                      ],
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing20),
-
-                    // Start Spazz Button
-                    GestureDetector(
-                      onTap: onToggleSpazz,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing20),
-                        decoration: BoxDecoration(
-                          gradient: isBroadcasting ? SpazzTheme.gradientPrimary : null,
-                          color: isBroadcasting ? null : SpazzTheme.bgTertiary,
-                          borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
-                          border: isBroadcasting ? null : Border.all(color: SpazzTheme.borderDark, width: 2),
-                          boxShadow: isBroadcasting ? [
-                            BoxShadow(color: SpazzTheme.accentPurple.withValues(alpha: 0.5), blurRadius: 15, spreadRadius: 2)
-                          ] : [],
-                        ),
+              return SafeArea(
+                child: loading
+                    ? const Center(child: CircularProgressIndicator(color: SpazzTheme.accentPurple))
+                    : Padding(
+                        padding: EdgeInsets.all((width * 0.03).clamp(8.0, 12.0)),
                         child: Column(
                           children: [
-                            Text(
-                              isBroadcasting ? '📡 BROADCASTING SIGNAL' : 'Start Spazz',
-                              style: TextStyle(
-                                color: isBroadcasting ? Colors.white : SpazzTheme.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
+                            Row(
+                              children: [
+                                Container(
+                                  width: headerButtonSize,
+                                  height: headerButtonSize,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1D1E2A),
+                                    borderRadius: BorderRadius.circular(headerButtonSize / 2),
+                                  ),
+                                  child: Icon(Icons.search, color: SpazzTheme.textPrimary, size: headerButtonSize * 0.52),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: navPad * 1.6, vertical: navPad * 0.8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18),
+                                    gradient: SpazzTheme.gradientPrimary,
+                                  ),
+                                  child: Text(
+                                    'SPAZZ',
+                                    style: SpazzTheme.heading3.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  width: headerButtonSize,
+                                  height: headerButtonSize,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1D1E2A),
+                                    borderRadius: BorderRadius.circular(headerButtonSize / 2),
+                                  ),
+                                  child: Icon(Icons.menu, color: SpazzTheme.textPrimary, size: headerButtonSize * 0.52),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: (width * 0.03).clamp(10.0, 16.0)),
+                            GestureDetector(
+                              onTap: onToggleSpazz,
+                              child: Container(
+                                width: double.infinity,
+                                height: startButtonHeight,
+                                decoration: BoxDecoration(
+                                  color: isBroadcasting ? SpazzTheme.accentPurple : const Color(0xFF1A1B2D),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: SpazzTheme.accentCyan, width: 1.5),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.play_arrow_rounded, color: isBroadcasting ? Colors.white : SpazzTheme.accentCyan, size: 24),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'START SPAZZ',
+                                      style: TextStyle(
+                                        color: isBroadcasting ? Colors.white : SpazzTheme.accentCyan,
+                                        fontSize: (width * 0.045).clamp(14.0, 18.0),
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isBroadcasting ? 'Searching for matched paths...' : 'Tap to start hunting for matches',
-                              style: TextStyle(
-                                color: isBroadcasting ? Colors.white.withValues(alpha: 0.8) : SpazzTheme.textSecondary,
-                                fontSize: 12,
+                            SizedBox(height: (width * 0.03).clamp(10.0, 16.0)),
+                            Expanded(
+                              child: Container(
+                                height: cityHeight,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Color(0xFF060712),
+                                      Color(0xFF110B2B),
+                                      Color(0xFF1A0F35),
+                                    ],
+                                  ),
+                                  border: Border.all(color: const Color(0xFF342A63), width: 2),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.black.withValues(alpha: 0.2),
+                                              Colors.black.withValues(alpha: 0.55),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned.fill(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 24, left: 18, right: 18, bottom: 18),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                children: List.generate(7, (index) {
+                                                  return Expanded(
+                                                    child: Container(
+                                                      margin: const EdgeInsets.only(right: 8, bottom: 8),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF171327).withValues(alpha: 0.8),
+                                                        border: Border.all(color: const Color(0xFF4A3C8A).withValues(alpha: 0.3)),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                children: List.generate(6, (index) {
+                                                  return Expanded(
+                                                    child: Container(
+                                                      margin: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF160F2C).withValues(alpha: 0.8),
+                                                        border: Border.all(color: const Color(0xFF4A3C8A).withValues(alpha: 0.3)),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                children: List.generate(7, (index) {
+                                                  return Expanded(
+                                                    child: Container(
+                                                      margin: const EdgeInsets.only(left: 8, bottom: 8),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF1B1431).withValues(alpha: 0.8),
+                                                        border: Border.all(color: const Color(0xFF4A3C8A).withValues(alpha: 0.3)),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        height: 200,
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Color(0xFF1C1033),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 25,
+                                      right: 25,
+                                      bottom: 40,
+                                      child: Container(
+                                        height: 130,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(26),
+                                          border: Border.all(color: const Color(0xFF6FE7FF), width: 2),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF6FE7FF).withValues(alpha: 0.45),
+                                              blurRadius: 14,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 90,
+                                      right: 90,
+                                      bottom: 75,
+                                      child: Container(
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF6FE7FF).withValues(alpha: 0.8),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 18,
+                                      left: 18,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1A1B2D),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: const Color(0xFF5CE7FF), width: 1),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.bolt, color: SpazzTheme.accentPurple, size: 14),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '$wispCoins',
+                                              style: const TextStyle(
+                                                color: SpazzTheme.textPrimary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 18,
+                                      right: 18,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1A1B2D),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: const Color(0xFF7A6CFF), width: 1),
+                                        ),
+                                        child: Text(
+                                          username,
+                                          style: const TextStyle(color: SpazzTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 24,
+                                      left: 24,
+                                      child: Container(
+                                        width: bottomDock,
+                                        height: bottomDock,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1D1E2A),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: const Color(0xFF6FE7FF), width: 2),
+                                        ),
+                                        child: const Icon(Icons.home_rounded, color: SpazzTheme.accentCyan),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 24,
+                                      left: bottomDock + bottomDockOffset,
+                                      child: Container(
+                                        width: bottomDock,
+                                        height: bottomDock,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1D1E2A),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: const Color(0xFF8B8EA6), width: 2),
+                                        ),
+                                        child: const Icon(Icons.inventory_2_rounded, color: SpazzTheme.textSecondary),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 24,
+                                      right: bottomDock + bottomDockOffset,
+                                      child: Container(
+                                        width: bottomDock,
+                                        height: bottomDock,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1D1E2A),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: const Color(0xFF8B8EA6), width: 2),
+                                        ),
+                                        child: const Icon(Icons.people_alt_rounded, color: SpazzTheme.textSecondary),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 24,
+                                      right: 24,
+                                      child: Container(
+                                        width: bottomDock,
+                                        height: bottomDock,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1D1E2A),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: const Color(0xFF8B8EA6), width: 2),
+                                        ),
+                                        child: const Icon(Icons.person_rounded, color: SpazzTheme.textSecondary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing16),
-
-                    // Open Radar button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/hunt'),
-                        icon: const Icon(Icons.radar, color: Colors.white),
-                        label: const Text('Open Radar',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: SpazzTheme.bgSecondary,
-                          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
-                            side: const BorderSide(color: SpazzTheme.accentPurple),
+              );
+            },
+          );
+        }
+      }
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing16),
-
-                    // AI Dating Coach button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => context.go('/coach'),
-                        icon: const Icon(Icons.psychology, color: SpazzTheme.accentCyan),
-                        label: const Text('AI Dating Coach',
-                            style: TextStyle(color: SpazzTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
-                          side: const BorderSide(color: SpazzTheme.accentCyan),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing16),
-
-                    // Bless a Wisp button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/bless-wisp'),
-                        icon: const Icon(Icons.stars, color: Colors.black),
-                        label: const Text('Bless a Wisp (Pin Money)',
-                            style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
-                          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: SpazzTheme.spacing20),
-
-                    // Leaderboard
-                    const Text('🏆 Leaderboard',
-                        style: TextStyle(color: SpazzTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: SpazzTheme.spacing12),
-                    if (leaderboard.isEmpty)
-                      const Center(
-                        child: Text('No hunters yet — be the first!',
-                            style: TextStyle(color: SpazzTheme.textSecondary)),
-                      )
-                    else
-                      ...leaderboard.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final player = entry.value;
-                        final medals = ['🥇', '🥈', '🥉'];
-                        final medal = i < 3 ? medals[i] : '${i + 1}.';
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: SpazzTheme.spacing8),
-                          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing16, vertical: SpazzTheme.spacing12),
-                          decoration: BoxDecoration(
-                            color: SpazzTheme.bgTertiary,
-                            borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
-                          ),
-                          child: Row(
+                          child: Stack(
                             children: [
-                              Text(medal, style: const TextStyle(fontSize: 20)),
-                              const SizedBox(width: SpazzTheme.spacing12),
-                              Expanded(
-                                child: Text(player['username'] ?? '',
-                                    style: const TextStyle(color: SpazzTheme.textPrimary, fontWeight: FontWeight.w600)),
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withValues(alpha: 0.2),
+                                        Colors.black.withValues(alpha: 0.55),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
-                              Text('${player['xp'] ?? 0} XP',
-                                  style: const TextStyle(color: SpazzTheme.accentPurple)),
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 24, left: 18, right: 18, bottom: 18),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          children: List.generate(7, (index) {
+                                            return Expanded(
+                                              child: Container(
+                                                margin: const EdgeInsets.only(right: 8, bottom: 8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF171327).withValues(alpha: 0.8),
+                                                  border: Border.all(color: const Color(0xFF4A3C8A).withValues(alpha: 0.3)),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          children: List.generate(6, (index) {
+                                            return Expanded(
+                                              child: Container(
+                                                margin: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF160F2C).withValues(alpha: 0.8),
+                                                  border: Border.all(color: const Color(0xFF4A3C8A).withValues(alpha: 0.3)),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          children: List.generate(7, (index) {
+                                            return Expanded(
+                                              child: Container(
+                                                margin: const EdgeInsets.only(left: 8, bottom: 8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF1B1431).withValues(alpha: 0.8),
+                                                  border: Border.all(color: const Color(0xFF4A3C8A).withValues(alpha: 0.3)),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  height: 200,
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Color(0xFF1C1033),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 25,
+                                right: 25,
+                                bottom: 40,
+                                child: Container(
+                                  height: 130,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(26),
+                                    border: Border.all(color: const Color(0xFF6FE7FF), width: 2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF6FE7FF).withValues(alpha: 0.45),
+                                        blurRadius: 14,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 90,
+                                right: 90,
+                                bottom: 75,
+                                child: Container(
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6FE7FF).withValues(alpha: 0.8),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 18,
+                                left: 18,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1A1B2D),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFF5CE7FF), width: 1),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.bolt, color: SpazzTheme.accentPurple, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '$wispCoins',
+                                        style: const TextStyle(
+                                          color: SpazzTheme.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 18,
+                                right: 18,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1A1B2D),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFF7A6CFF), width: 1),
+                                  ),
+                                  child: Text(
+                                    username,
+                                    style: const TextStyle(color: SpazzTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 24,
+                                left: 24,
+                                child: Container(
+                                  width: bottomDock,
+                                  height: bottomDock,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1D1E2A),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFF6FE7FF), width: 2),
+                                  ),
+                                  child: const Icon(Icons.home_rounded, color: SpazzTheme.accentCyan),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 24,
+                                left: bottomDock + bottomDockOffset,
+                                child: Container(
+                                  width: bottomDock,
+                                  height: bottomDock,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1D1E2A),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFF8B8EA6), width: 2),
+                                  ),
+                                  child: const Icon(Icons.inventory_2_rounded, color: SpazzTheme.textSecondary),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 24,
+                                right: bottomDock + bottomDockOffset,
+                                child: Container(
+                                  width: bottomDock,
+                                  height: bottomDock,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1D1E2A),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFF8B8EA6), width: 2),
+                                  ),
+                                  child: const Icon(Icons.people_alt_rounded, color: SpazzTheme.textSecondary),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 24,
+                                right: 24,
+                                child: Container(
+                                  width: bottomDock,
+                                  height: bottomDock,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1D1E2A),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFF8B8EA6), width: 2),
+                                  ),
+                                  child: const Icon(Icons.person_rounded, color: SpazzTheme.textSecondary),
+                                ),
+                              ),
                             ],
                           ),
-                        );
-                      }),
-                    const SizedBox(height: SpazzTheme.spacing20),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String icon;
-  final String label;
-  final String value;
-
-  const _StatCard({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(SpazzTheme.spacing14),
-        decoration: BoxDecoration(
-          color: SpazzTheme.bgTertiary,
-          borderRadius: BorderRadius.circular(SpazzTheme.radiusLarge),
-        ),
-        child: Column(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: SpazzTheme.spacing6),
-            Text(value,
-                style: const TextStyle(
-                    color: SpazzTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
-            Text(label, style: const TextStyle(color: SpazzTheme.textSecondary, fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+          },
+        );
+    }
 }
