@@ -1,0 +1,21 @@
+* [33m8ea760e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m updated copilot instructions and gradle wrapper stuff
+*   [33m9218ca0[m Merge remote-tracking branch 'origin/main'
+[32m|[m[33m\[m  
+[32m|[m * [33m3aa0bd7[m flutter doctor fixes chrome and dart sdk version issues
+[32m|[m * [33med79d80[m add <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+[32m|[m *   [33m9a46a3e[m Merge origin/main and retain imported Spazz screens
+[32m|[m [34m|[m[35m\[m  
+[32m|[m * [35m|[m [33mfc1c498[m Import Spazz screens
+[32m|[m * [35m|[m [33m87b371d[m install react
+[32m|[m * [35m|[m [33med2d0d3[m add scripts to package.json
+* [35m|[m [35m|[m [33m8ac59d6[m Update main workspace from Android Studio edits
+[35m|[m [35m|[m[35m/[m  
+[35m|[m[35m/[m[35m|[m   
+* [35m|[m [33m6d144d1[m changes
+[35m|[m [35m|[m * [33m38730d6[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/npm_and_yarn-8f015dd92b[m[33m)[m Bump next in the npm_and_yarn group across 1 directory
+[35m|[m [35m|[m[35m/[m  
+[35m|[m[35m/[m[35m|[m   
+* [35m|[m [33m07b60a7[m api print ignore
+* [35m|[m [33m273036e[m remove unused icon files from web/icons directory
+* [35m|[m [33m989f4bd[m home_screen.dart: Fix indentation for _loadUserData method
+* [35m|[m [33ma6b191f[m user data loading with mock data for development
