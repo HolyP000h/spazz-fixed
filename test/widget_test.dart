@@ -10,7 +10,7 @@ void main() {
   testWidgets('shows the login screen on app launch', (tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('SPAZZ'), findsOneWidget);
+    expect(find.text('Move.Discover.'), findsOneWidget);
     expect(find.text('Login'), findsWidgets);
   });
 

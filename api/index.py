@@ -16,7 +16,7 @@ from supabase import create_client, Client
 
 app = FastAPI()
 
-SECRET_KEY = os.environ.get("SPAZZ_SECRET", "spazz-dev-secret-change-in-prod")
+SECRET_KEY = os.environ["SPAZZ_SECRET"]
 ADMIN_IDS = {"user_ben"}
 
 # ── CONFIGURATION CONSTANTS ───────────────────
@@ -24,8 +24,8 @@ METER_TO_DEGREE_FACTOR = 0.000009
 HOME_BLACKOUT_RADIUS_METERS = 300
 
 # ── SUPABASE ─────────────────────────────
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kytmktshrywvxigobsxd.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "sb_publishable_U09QKkouk1bYdQum8h6Ytg_zyCKRZml")
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 
 # Execute and initialize the client engine
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

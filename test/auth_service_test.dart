@@ -11,6 +11,8 @@ void main() {
   });
 
   test('login persists username and clearSession removes it', () async {
+    await AuthService.register('alice@example.com', 'password123');
+    await AuthService.clearSession();
     await AuthService.login('alice@example.com', 'password123');
 
     expect(await AuthService.getUsername(), 'alice@example.com');

@@ -14,6 +14,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _loading = false;
   String? _error;
+  bool _keepLoggedIn = true;
+  bool _obscurePassword = true;
 
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -41,124 +43,132 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _googleSignIn() async {
-    setState(() { _loading = true; _error = null; });
-    try {
-      await AuthService.signInWithGoogle();
-      if (mounted) context.go('/home');
-    } catch (e) {
-      setState(() { _error = e.toString().replaceAll('Exception: ', ''); });
-    } finally {
-      setState(() { _loading = false; });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SpazzTheme.bgPrimary,
+      backgroundColor: const Color(0xFF0B0F14),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: SpazzTheme.spacing24, vertical: SpazzTheme.spacing40),
+          padding: const EdgeInsets.fromLTRB(28, 10, 17, 40),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: SpazzTheme.spacing40),
-              // Logo
-              Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(SpazzTheme.radiusXL),
-                    gradient: SpazzTheme.gradientPrimary,
-                  ),
-                  child: const Icon(Icons.bolt, size: 40, color: Colors.white),
+              SizedBox(
+                height: 107,
+                width: 235,
+                child: Image.asset(
+                  '.Figma/Make/assets/images/spazz_logo.png',
+                  fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: SpazzTheme.spacing20),
-              const Center(
-                child: Text('SPAZZ', style: SpazzTheme.heading2),
+              const SizedBox(height: 49),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Move.Discover.', style: _loginHeadline),
               ),
-              const SizedBox(height: SpazzTheme.spacing48),
-
-              // Tab switcher
-              Container(
-                decoration: BoxDecoration(
-                  color: SpazzTheme.bgTertiary,
-                  borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
-                ),
-                padding: const EdgeInsets.all(4),
-                child: Row(
-                  children: [
-                    _tab('Login', _isLogin, () => setState(() => _isLogin = true)),
-                    _tab('Join', !_isLogin, () => setState(() => _isLogin = false)),
-                  ],
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Connect.', style: _loginHeadline),
+              ),
+              const SizedBox(height: 34),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _isLogin ? 'Enter Login Name:' : 'Choose Login Name:',
+                  style: _fieldLabel,
                 ),
               ),
-              const SizedBox(height: SpazzTheme.spacing24),
-
-              // Username
-              TextField(
+              const SizedBox(height: 15),
+              _loginField(
                 controller: _usernameCtrl,
-                style: const TextStyle(color: SpazzTheme.textPrimary),
-                decoration: const InputDecoration(
-                  hintText: 'Username',
-                  prefixIcon: Icon(Icons.person_outline, color: SpazzTheme.textTertiary),
+                hintText: 'Login name',
+                icon: Icons.person_outline,
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _isLogin ? 'Enter Login Password:' : 'Choose Login Password:',
+                  style: _fieldLabel,
                 ),
               ),
-              const SizedBox(height: SpazzTheme.spacing12),
-
-              // Password
-              TextField(
+              const SizedBox(height: 15),
+              _loginField(
                 controller: _passwordCtrl,
-                obscureText: true,
-                style: const TextStyle(color: SpazzTheme.textPrimary),
-                decoration: const InputDecoration(
-                  hintText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline, color: SpazzTheme.textTertiary),
+                hintText: 'Login password',
+                icon: Icons.lock_outline,
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: const Color(0xFF64748B),
+                  ),
                 ),
               ),
-              const SizedBox(height: SpazzTheme.spacing8),
-
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: SpazzTheme.spacing8),
-                  child: Text(_error!, style: const TextStyle(color: SpazzTheme.errorRed, fontSize: 13)),
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(_error!, style: const TextStyle(color: SpazzTheme.errorRed, fontSize: 13)),
+                  ),
                 ),
-              const SizedBox(height: SpazzTheme.spacing8),
-
-              // Submit button
-              ElevatedButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(_isLogin ? 'Login' : 'Create Account'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _keepLoggedIn,
+                    onChanged: (value) => setState(() => _keepLoggedIn = value ?? false),
+                    activeColor: _loginCyan,
+                    side: const BorderSide(color: _loginCyan),
+                  ),
+                  const Text('Keep me logged in:', style: _fieldLabel),
+                ],
               ),
-              const SizedBox(height: SpazzTheme.spacing20),
-
-              // Divider
-              Row(children: [
-                const Expanded(child: Divider(color: SpazzTheme.borderDark)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: SpazzTheme.spacing12),
-                  child: Text('or', style: TextStyle(color: SpazzTheme.textTertiary)),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 58,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _loginCyan,
+                    foregroundColor: const Color(0xFF0B0F14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(33)),
+                    elevation: 0,
+                  ),
+                  child: _loading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0B0F14)))
+                      : Text(_isLogin ? 'Login' : 'Create Profile', style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
                 ),
-                const Expanded(child: Divider(color: SpazzTheme.borderDark)),
-              ]),
-              const SizedBox(height: SpazzTheme.spacing20),
-
-              // Google button
-              OutlinedButton.icon(
-                onPressed: _loading ? null : _googleSignIn,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: SpazzTheme.textPrimary,
-                  side: const BorderSide(color: SpazzTheme.borderDark),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium)),
+              ),
+              const SizedBox(height: 18),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Text('Forgot Password?', style: TextStyle(color: _loginCyan, fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
-                icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 22),
-                label: const Text('Continue with Google'),
+              ),
+              const SizedBox(height: 150),
+              Text(
+                _isLogin ? 'New? Create New Profile and Join the Grid!' : 'Already have a profile?',
+                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 58,
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _isLogin = !_isLogin),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: _loginCyan, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(33)),
+                    foregroundColor: _loginCyan,
+                  ),
+                  child: Text(_isLogin ? 'Create Profile' : 'Back to Login', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                ),
               ),
             ],
           ),
@@ -167,27 +177,45 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _tab(String label, bool active, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: SpazzTheme.spacing8),
-          decoration: BoxDecoration(
-            color: active ? SpazzTheme.accentPurple : Colors.transparent,
-            borderRadius: BorderRadius.circular(SpazzTheme.radiusMedium),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: active ? SpazzTheme.textPrimary : SpazzTheme.textTertiary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+  Widget _loginField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: Icon(icon, color: const Color(0xFF64748B)),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: const Color(0xFF111827),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1F2937)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _loginCyan),
         ),
       ),
     );
   }
 }
+
+const Color _loginCyan = Color(0xFF00EEFF);
+const TextStyle _loginHeadline = TextStyle(
+  color: _loginCyan,
+  fontSize: 37,
+  fontWeight: FontWeight.w800,
+  height: 1.05,
+);
+const TextStyle _fieldLabel = TextStyle(
+  color: Color(0xFF94A3B8),
+  fontSize: 12,
+  fontWeight: FontWeight.w600,
+);

@@ -54,3 +54,34 @@ spatial_index.bak
 
 .dart_tool/
 node_modules/
+
+# Flutter generated files
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+**/build/
+**/.dart_tool/
+
+# Android/Gradle generated files
+**/.gradle/
+**/.cxx/
+**/local.properties
+captures/
+
+# Flutter platform generated folders
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# JavaScript/Next/Expo generated files
+.next/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# Temporary editor and operating-system files
+*.swp
+*.swo
+*~
+.vercel

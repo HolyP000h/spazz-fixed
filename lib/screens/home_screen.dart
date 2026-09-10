@@ -40,14 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _toggleSpazzMode() async {
+  Future<bool> _toggleSpazzMode() async {
     final homeAddress = _prefs['home_address'] ?? '';
     if (homeAddress.isEmpty) {
       _showSafetyWarning(
         'Home Address Required',
         'Enter your home address in Profile to set a safe zone before starting Spazz.',
       );
-      return;
+      return false;
     }
 
     final newState = !(_prefs['is_broadcasting'] ?? false);
@@ -69,15 +69,23 @@ class _HomeScreenState extends State<HomeScreen> {
               'In Safe Zone',
               'Spazz broadcasting is disabled while you are within your Home Safe Zone.',
             );
-            return;
+            return false;
           }
         }
       } catch (_) {}
     }
 
     await AuthService.updatePreferences(isBroadcasting: newState);
-    if (!mounted) return;
+    if (!mounted) return false;
     setState(() => _prefs['is_broadcasting'] = newState);
+    return true;
+  }
+
+  Future<void> _startSpazz() async {
+    final enabled = await _toggleSpazzMode();
+    if (enabled && mounted && (_prefs['is_broadcasting'] ?? false)) {
+      context.go('/hunt');
+    }
   }
 
   void _showSafetyWarning(String title, String message) {
@@ -114,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _DashboardTab(
         loading: _loading,
         isBroadcasting: _prefs['is_broadcasting'] ?? false,
-        onStart: () => context.go('/hunt'),
+        onStart: _startSpazz,
         onToggleSpazz: _toggleSpazzMode,
       ),
       const FriendsScreen(),
