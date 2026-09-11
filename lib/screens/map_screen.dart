@@ -39,11 +39,10 @@ class _MapScreenState extends State<MapScreen> {
   List<CircleMarker> _hotspotCircles = [];
   final List<CircleMarker> _pingWaves = [];
 
-  List<dynamic> _nearbyUsers = [];
-  List<dynamic> _wisps = [];
   List<dynamic> _hotspots = [];
   List<dynamic> _nearbyNotes = [];
   List<dynamic> _blessedWisps = [];
+  Map<String, dynamic>? _signalTarget;
 
   // Spazz Match State
   Map<String, dynamic>? _activeMatch;
@@ -193,22 +192,14 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final res = await ApiService.get(
-        '/api/nearby?lat=${_myPosition!.latitude}&lng=${_myPosition!.longitude}&user_id=$_userId'
+        '/api/nearby?lat=${_myPosition!.latitude}&lng=${_myPosition!.longitude}'
+        '&user_id=$_userId&interested_in=${Uri.encodeQueryComponent(_myPrefs['interested_in'] ?? 'Both')}'
+        '&min_age=${_myPrefs['min_age'] ?? 18}&max_age=${_myPrefs['max_age'] ?? 99}'
       );
       
       if (res != null) {
-        final users = (res['users'] as List?) ?? [];
-        final processedUsers = users.map((u) {
-          if (u['lat'] == 0.0) {
-            u['lat'] = _myPosition!.latitude + 0.0003;
-            u['lng'] = _myPosition!.longitude + 0.0003;
-          }
-          return u;
-        }).toList();
-
         setState(() {
-          _nearbyUsers = processedUsers;
-          _wisps = res['wisps'] ?? [];
+          _signalTarget = res['signal_target'] as Map<String, dynamic>?;
           _hotspots = res['hotspots'] ?? [];
         });
         
@@ -237,21 +228,11 @@ class _MapScreenState extends State<MapScreen> {
   void _checkForMatches() async {
     if (_isHunting || _isHuntingNote || _isHuntingBlessed || _myPosition == null) return;
 
-    for (var user in _nearbyUsers) {
-      final genderMatch = _myPrefs['interested_in'] == 'Both' || user['gender'] == _myPrefs['interested_in'];
-      final ageMatch = user['age'] >= (_myPrefs['min_age'] ?? 18) && user['age'] <= (_myPrefs['max_age'] ?? 99);
-      
-      if (genderMatch && ageMatch && user['is_broadcasting'] == true) {
-        double dist = Geolocator.distanceBetween(
-          _myPosition!.latitude, _myPosition!.longitude, 
-          user['lat'], user['lng']
-        );
-
-        if (dist < 50) {
-          _triggerSpazzAlert(user);
-          return;
-        }
-      }
+    final signalTarget = _signalTarget;
+    if (signalTarget != null) {
+      _signalTarget = null;
+      _triggerSpazzAlert(signalTarget);
+      return;
     }
 
     for (var note in _nearbyNotes) {
@@ -384,7 +365,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  void _updateHuntStatus() {
+  Future<void> _updateHuntStatus() async {
     if ((!_isHunting && !_isHuntingNote && !_isHuntingBlessed) || _myPosition == null) {
       _checkGeofence();
       return;
@@ -395,10 +376,25 @@ class _MapScreenState extends State<MapScreen> {
       : (_isHuntingNote ? _activeNote : _activeBlessedWisp);
     if (target == null) return;
 
-    double dist = Geolocator.distanceBetween(
-      _myPosition!.latitude, _myPosition!.longitude, 
-      target['lat'], target['lng']
+    final targetId = target['id'];
+    if (_isHunting && targetId != null) {
+      final status = await ApiService.get('/api/hunt/status?target_id=$targetId');
+      if (status == null || !mounted || !_isHunting) return;
+      final dist = (status['distance_m'] as num?)?.toDouble();
+      if (dist == null) return;
+      _applyHuntStatus(dist);
+      return;
+    }
+
+    final dist = Geolocator.distanceBetween(
+      _myPosition!.latitude, _myPosition!.longitude,
+      target['lat'], target['lng'],
     );
+    _applyHuntStatus(dist);
+  }
+
+  void _applyHuntStatus(double dist) {
+    if (!mounted) return;
 
     setState(() {
       _intensity = (1.0 - (dist / 100)).clamp(0.0, 1.0);
@@ -639,29 +635,6 @@ class _MapScreenState extends State<MapScreen> {
       ));
     }
 
-    for (final user in _nearbyUsers) {
-      final isBoss = user['is_premium'] ?? false;
-      markers.add(Marker(
-        width: 24,
-        height: 24,
-        point: LatLng(user['lat'], user['lng']),
-        child: Icon(
-          Icons.person_pin_circle,
-          color: isBoss ? Colors.orange : Colors.blue,
-          size: 24,
-        ),
-      ));
-    }
-
-    for (final wisp in _wisps) {
-      markers.add(Marker(
-        width: 24,
-        height: 24,
-        point: LatLng(wisp['lat'], wisp['lng']),
-        child: const Icon(Icons.bolt, color: Colors.amber, size: 24),
-      ));
-    }
-
     if (_isPremium) {
       for (final hotspot in _hotspots) {
         final intensity = (hotspot['visit_count'] ?? 1).toDouble();
@@ -699,28 +672,6 @@ class _MapScreenState extends State<MapScreen> {
       point: LatLng(_myPosition!.latitude, _myPosition!.longitude),
       child: const Icon(Icons.location_pin, color: Colors.purple, size: 28),
     ));
-
-    for (int i = 0; i < 3; i++) {
-      final lat = _myPosition!.latitude + (rand.nextDouble() - 0.5) * 0.01;
-      final lng = _myPosition!.longitude + (rand.nextDouble() - 0.5) * 0.01;
-      markers.add(Marker(
-        width: 22,
-        height: 22,
-        point: LatLng(lat, lng),
-        child: const Icon(Icons.person_pin, color: Colors.blue, size: 22),
-      ));
-    }
-
-    for (int i = 0; i < 5; i++) {
-      final lat = _myPosition!.latitude + (rand.nextDouble() - 0.5) * 0.008;
-      final lng = _myPosition!.longitude + (rand.nextDouble() - 0.5) * 0.008;
-      markers.add(Marker(
-        width: 22,
-        height: 22,
-        point: LatLng(lat, lng),
-        child: const Icon(Icons.bolt, color: Colors.amber, size: 22),
-      ));
-    }
 
     if (_isPremium) {
       for (int i = 0; i < 3; i++) {
@@ -828,8 +779,8 @@ class _MapScreenState extends State<MapScreen> {
                               color: Color(0xFF22C55E), shape: BoxShape.circle),
                         ),
                         const SizedBox(width: 6),
-                        Text('${_nearbyUsers.length} nearby',
-                            style: const TextStyle(color: Colors.white, fontSize: 13)),
+                        const Text('Signal standby',
+                          style: TextStyle(color: Colors.white, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -923,31 +874,6 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-          // ── BOTTOM LEGEND ─────────────────────────────────────────
-          Positioned(
-            bottom: 20,
-            left: 70,
-            right: 70,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xCC13131A),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _LegendItem(color: const Color(0xFF7C3AED), label: 'You'),
-                  _LegendItem(color: Colors.orange, label: 'Boss'),
-                  _LegendItem(color: Colors.blue, label: 'Hunter'),
-                  _LegendItem(color: Colors.yellow, label: 'Wisp'),
-                  if (_isPremium)
-                    _LegendItem(color: Colors.deepOrange, label: 'Hot'),
-                ],
-              ),
-            ),
-          ),
-
           // ── SPAZZ FLASH OVERLAY ──────────────────────────────────
           if (_showSpazzFlash)
             Positioned.fill(
@@ -966,26 +892,27 @@ class _MapScreenState extends State<MapScreen> {
             ),
         ],
       ),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendItem({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8, height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
-      ],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        onTap: (index) {
+          const destinations = ['/home', '/inventory', '/social', '/profile'];
+          if (index != 0) {
+            context.go(destinations[index]);
+          } else {
+            context.go('/home');
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF0D0D14),
+        selectedItemColor: SpazzTheme.accentCyan,
+        unselectedItemColor: const Color(0xFF888899),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), activeIcon: Icon(Icons.inventory_2), label: 'Inventory'),
+          BottomNavigationBarItem(icon: Icon(Icons.people_outline), activeIcon: Icon(Icons.people), label: 'Social'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+        ],
+      ),
     );
   }
 }

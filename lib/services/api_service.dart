@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String _baseUrl = 'https://www.spazzapp.com';
+  static Future<dynamic> Function(String, Map<String, dynamic>)? authRequest;
 
   // --- MOCK DATABASE ---
   static final List<Map<String, dynamic>> _friends = [];
@@ -61,29 +62,6 @@ class ApiService {
       return {"status": "success", "message": "Feedback processed by Coach AI"};
     }
 
-    if (path.contains('/api/me')) {
-      return {
-        "username": "ben",
-        "level": 1,
-        "xp": 35,
-        "steps": 4820,
-        "credits": 45,
-        "wisps_collected": 12,
-        "is_premium": true
-      };
-    }
-
-    if (path.contains('/api/user/')) {
-      return {
-        "username": "ben",
-        "level": 1,
-        "xp": 35,
-        "steps": 4820,
-        "calories": 245,
-        "wisps": 12
-      };
-    }
-
     if (path.contains('/api/leaderboard')) {
       return [
         {"username": "ben", "wisps": 12, "level": 1},
@@ -92,7 +70,7 @@ class ApiService {
       ];
     }
 
-    if (path.contains('/api/nearby') || path.contains('/api/ping/nearby')) {
+    if (path.contains('/api/ping/nearby')) {
       // Return a simulated match for testing the "Spazz" flow
       return {
         "users": [
@@ -138,6 +116,28 @@ class ApiService {
     // --- DEVELOPMENT MOCK SYSTEM ---
     print("ApiService MOCK POST Intercepted: $path");
     
+    if (path.contains('/api/register') || path.contains('/api/login')) {
+      final request = authRequest;
+      if (request != null) return request(path, Map<String, dynamic>.from(body as Map));
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final response = await http.post(
+        Uri.parse('$_baseUrl$path'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          ...?headers,
+        },
+        body: json.encode(body),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return json.decode(response.body);
+      }
+      throw Exception('Request failed with ${response.statusCode}: ${response.body}');
+    }
+
     if (path.contains('/api/friends/add')) {
       final friend = body as Map<String, dynamic>;
       if (!_friends.any((f) => f['id'] == friend['id'])) {

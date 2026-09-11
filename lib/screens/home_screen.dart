@@ -14,14 +14,16 @@ import 'shop_screen.dart';
 const Color _magenta = Color(0xFFE83CFF);
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialIndex;
+
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex = widget.initialIndex;
   Map<String, dynamic> _prefs = {};
   bool _loading = true;
 

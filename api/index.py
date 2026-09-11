@@ -177,23 +177,22 @@ async def register(req: RegisterRequest):
     user_id = f"user_{uuid.uuid4().hex[:8]}"
     token = make_token(user_id)
 
-    supabase.table("users").insert({
-        "id": user_id,
-        "username": req.username,
-        "password_hash": hash_password(req.password),
-        "token": token,
-        "age": req.age,
-        "gender": req.gender,
-        "seeking": req.seeking,
-        "home_lat": req.home_lat,
-        "home_lon": req.home_lon,
-        "steps": 0,
-        "wisp_coins": 0,
-        "level": 1,
-        "xp": 0,
-        "is_admin": False,
-        "is_premium": False,
-    }).execute()
+    try:
+        supabase.table("users").insert({
+            "id": user_id,
+            "username": req.username,
+            "password_hash": hash_password(req.password),
+            "token": token,
+            "age": req.age,
+            "gender": req.gender,
+            "wisp_coins": 50,
+            "level": 1,
+            "xp": 0,
+            "is_premium": False,
+        }).execute()
+    except Exception as exc:
+        print(f"Registration insert failed: {exc}")
+        raise HTTPException(500, "Registration could not be completed")
 
     return {"token": token, "user_id": user_id, "username": req.username, "is_admin": False}
 
@@ -736,7 +735,15 @@ async def location_update_flutter(request: Request, auth=Depends(get_current_use
 
 
 @app.get("/api/nearby")
-async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_current_user)):
+async def get_nearby(
+    lat: float,
+    lng: float,
+    user_id: str,
+    interested_in: str = "Both",
+    min_age: int = 18,
+    max_age: int = 99,
+    auth=Depends(get_current_user),
+):
     if not auth or not isinstance(auth, dict):
         raise HTTPException(401, "Invalid session payload")
 
@@ -751,6 +758,7 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
     ).eq("online", True).execute()
 
     nearby_users = []
+    signal_target = None
     # 🚀 Enforce strict indentation level matching the function body!
     for u in (all_users_res.data or []):
         if not isinstance(u, dict):
@@ -785,13 +793,14 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
 
         dist = haversine(lat, lng, user_lat, user_lon)
         if dist <= RADIUS_M:
-            nearby_users.append({
-                "id": u.get("id"),
-                "username": u.get("username"),
-                "lat": user_lat,
-                "lng": user_lon,
-                "is_premium": u.get("is_premium", False),
-            })
+            gender_matches = interested_in == "Both" or u.get("gender") == interested_in
+            age_matches = min_age <= int(u.get("age", 25)) <= max_age
+            if signal_target is None and gender_matches and age_matches and u.get("is_broadcasting", True) and dist < 50:
+                signal_target = {
+                    "id": u.get("id"),
+                    "username": u.get("username"),
+                    "is_premium": u.get("is_premium", False),
+                }
 
     move_wisps()
     wisps_raw = get_wisps()
@@ -856,9 +865,39 @@ async def get_nearby(lat: float, lng: float, user_id: str, auth=Depends(get_curr
 
     return {
         "users": nearby_users,
+        "signal_target": signal_target,
         "wisps": nearby_wisps,
         "hotspots": nearby_hotspots,
     }
+
+
+@app.get("/api/hunt/status")
+async def hunt_status(target_id: str, auth=Depends(get_current_user)):
+    """Return hunt guidance without exposing the target's coordinates."""
+    current_lat = auth.get("lat")
+    current_lon = auth.get("lon")
+    if current_lat is None or current_lon is None:
+        raise HTTPException(400, "Current location is unavailable")
+
+    target_res = supabase.table("users").select("id,lat,lon").eq("id", target_id).limit(1).execute()
+    target = target_res.data[0] if target_res.data else None
+    if not target or target.get("lat") is None or target.get("lon") is None:
+        raise HTTPException(404, "Hunt target unavailable")
+
+    target_lat = float(target["lat"])
+    target_lon = float(target["lon"])
+    current_lat = float(current_lat)
+    current_lon = float(current_lon)
+    distance = haversine(current_lat, current_lon, target_lat, target_lon)
+    d_lon = math.radians(target_lon - current_lon)
+    lat1 = math.radians(current_lat)
+    lat2 = math.radians(target_lat)
+    bearing = (math.degrees(math.atan2(
+        math.sin(d_lon) * math.cos(lat2),
+        math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(d_lon),
+    )) + 360) % 360
+
+    return {"distance_m": distance, "bearing": bearing}
 
 
 @app.post("/api/wisp/collect")

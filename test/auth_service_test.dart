@@ -1,13 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spazz_fixed/services/auth_service.dart';
+import 'package:spazz_fixed/services/api_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    ApiService.authRequest = (path, body) async => {
+      'token': 'test-token',
+      'user_id': body['username'],
+      'username': body['username'],
+    };
     await AuthService.clearSession();
+  });
+
+  tearDown(() {
+    ApiService.authRequest = null;
   });
 
   test('login persists username and clearSession removes it', () async {

@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_service.dart';
 
 class AuthService {
   static String? _currentUsername;
@@ -67,23 +68,18 @@ class AuthService {
       throw Exception('Enter both your login name and password.');
     }
 
+    final result = await ApiService.post('/api/login', {
+      'username': username,
+      'password': password,
+    });
     final prefs = await SharedPreferences.getInstance();
-    final savedUsername = prefs.getString('profile_username');
-    final savedPassword = prefs.getString('profile_password');
-    if (savedUsername == null || savedPassword == null) {
-      throw Exception('No profile found. Create a profile first.');
-    }
-    if (savedUsername != username || savedPassword != _credentialFingerprint(password)) {
-      throw Exception('Incorrect login name or password.');
-    }
-
-    _currentUsername = username;
+    _currentUsername = result['username'] as String? ?? username;
     _isAuthenticated = true;
 
-    await prefs.setString('auth_username', username);
+    await prefs.setString('auth_username', _currentUsername!);
     await prefs.setBool('auth_is_authenticated', true);
-    await prefs.setString('token', 'demo-token');
-    await prefs.setString('user_id', username);
+    await prefs.setString('token', result['token'] as String);
+    await prefs.setString('user_id', result['user_id'] as String);
     return true;
   }
 
@@ -93,21 +89,18 @@ class AuthService {
       throw Exception('Use a login name with 3+ characters and a password with 8+ characters.');
     }
 
+    final result = await ApiService.post('/api/register', {
+      'username': username,
+      'password': password,
+    });
     final prefs = await SharedPreferences.getInstance();
-    final savedUsername = prefs.getString('profile_username');
-    if (savedUsername != null && savedUsername.isNotEmpty && savedUsername != username) {
-      throw Exception('This device already has a different profile.');
-    }
-
-    _currentUsername = username;
+    _currentUsername = result['username'] as String? ?? username;
     _isAuthenticated = true;
 
-    await prefs.setString('profile_username', username);
-    await prefs.setString('profile_password', _credentialFingerprint(password));
-    await prefs.setString('auth_username', username);
+    await prefs.setString('auth_username', _currentUsername!);
     await prefs.setBool('auth_is_authenticated', true);
-    await prefs.setString('token', 'demo-token');
-    await prefs.setString('user_id', username);
+    await prefs.setString('token', result['token'] as String);
+    await prefs.setString('user_id', result['user_id'] as String);
     return true;
   }
 
@@ -140,15 +133,6 @@ class AuthService {
     await prefs.remove('user_id');
     // Actually, to match the test's expectation of prefs.getString(...) being null, we should remove it.
     await prefs.remove('auth_username');
-  }
-
-  static String _credentialFingerprint(String value) {
-    var hash = 0x811c9dc5;
-    for (final byte in value.codeUnits) {
-      hash ^= byte;
-      hash = (hash * 0x01000193) & 0xFFFFFFFF;
-    }
-    return hash.toRadixString(16).padLeft(8, '0');
   }
 
   static Future<bool> get isAuthenticated async {

@@ -9,6 +9,8 @@
     { "src": "/", "dest": "/index.html" },
     { "src": "/favicon.ico", "dest": "/favicon.ico" },
     { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/app", "dest": "/static/app/index.html" },
+    { "src": "/app/(.*)", "dest": "/static/app/$1" },
     { "src": "/api/(.*)", "dest": "/api/index.py" },
     { "src": "/(.*)", "dest": "/api/index.py" }
   ]
