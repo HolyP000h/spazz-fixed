@@ -16,7 +16,9 @@ from supabase import create_client, Client
 
 app = FastAPI()
 
-SECRET_KEY = os.environ["SPAZZ_SECRET"]
+SECRET_KEY = os.environ.get("SPAZZ_SECRET") or os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("Missing required secret: set SPAZZ_SECRET or SECRET_KEY in the environment.")
 ADMIN_IDS = {"user_ben"}
 
 # ── CONFIGURATION CONSTANTS ───────────────────
@@ -24,8 +26,10 @@ METER_TO_DEGREE_FACTOR = 0.000009
 HOME_BLACKOUT_RADIUS_METERS = 300
 
 # ── SUPABASE ─────────────────────────────
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Missing required Supabase configuration: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.")
 
 # Execute and initialize the client engine
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

@@ -1,1 +1,12 @@
-{"scripts":{"dev":"next dev","build":"next build","start":"next start","lint":"next lint"},"dependencies":{"@supabase/ssr":"^0.12.0","@supabase/supabase-js":"^2.108.2","@vercel/analytics":"^2.0.1","@vercel/speed-insights":"^2.0.0","next":"^16.2.10","react":"^19.2.7","react-dom":"^19.2.7"}}
+{
+  "name": "spazz-fixed",
+  "private": true,
+  "scripts": {
+    "build": "echo \"Static deployment: no build step required\"",
+    "dev": "python -m http.server 8000"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}

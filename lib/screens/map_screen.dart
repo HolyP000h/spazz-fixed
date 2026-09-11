@@ -5,7 +5,8 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'subscription_screen.dart';
@@ -26,18 +27,17 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   Position? _myPosition;
   double _heading = 0.0;
   bool _loading = false;
   bool _isPremium = false;
   String _token = ''; 
   String _userId = '';
-  String _username = '';
 
-  Set<Marker> _markers = {};
-  Set<Circle> _hotspotCircles = {};
-  final Set<Circle> _pingWaves = {};
+  List<Marker> _markers = [];
+  List<CircleMarker> _hotspotCircles = [];
+  final List<CircleMarker> _pingWaves = [];
 
   List<dynamic> _nearbyUsers = [];
   List<dynamic> _wisps = [];
@@ -79,7 +79,7 @@ class _MapScreenState extends State<MapScreen> {
     _fetchTimer?.cancel();
     _pingPollTimer?.cancel();
     _positionStream?.cancel();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -91,7 +91,6 @@ class _MapScreenState extends State<MapScreen> {
     
     _token = prefs.getString('token') ?? '';
     _userId = prefs.getString('user_id') ?? '';
-    _username = prefs.getString('username') ?? 'Hunter';
     _activePingId = prefs.getString('active_ping') ?? 'ping_default';
 
     try {
@@ -166,16 +165,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _updateCamera() {
-    if (_mapController == null || _myPosition == null) return;
-    _mapController!.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(_myPosition!.latitude, _myPosition!.longitude),
-          zoom: 18.0,
-          tilt: 65.0, 
-          bearing: _heading,
-        ),
-      ),
+    if (_myPosition == null) return;
+    _mapController.move(
+      LatLng(_myPosition!.latitude, _myPosition!.longitude),
+      18.0,
     );
   }
 
@@ -603,21 +596,22 @@ class _MapScreenState extends State<MapScreen> {
     final priority = pingDef?['priority'] as int? ?? 1;
     final color = _priorityColor(priority);
 
-    final waveId = 'wave_${ping.id}';
+    final wave = CircleMarker(
+      point: LatLng(ping.lat, ping.lng),
+      radius: 80 + (priority * 40).toDouble(),
+      useRadiusInMeter: true,
+      color: color.withValues(alpha: 0.15),
+      borderColor: color.withValues(alpha: 0.6),
+      borderStrokeWidth: 2,
+    );
+
     setState(() {
-      _pingWaves.add(Circle(
-        circleId: CircleId(waveId),
-        center: LatLng(ping.lat, ping.lng),
-        radius: 80 + (priority * 40).toDouble(),
-        fillColor: color.withValues(alpha: 0.15),
-        strokeColor: color.withValues(alpha: 0.6),
-        strokeWidth: 2,
-      ));
+      _pingWaves.add(wave);
     });
 
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
-        setState(() => _pingWaves.removeWhere((c) => c.circleId.value == waveId));
+        setState(() => _pingWaves.remove(wave));
       }
     });
   }
@@ -633,51 +627,56 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _buildMarkers() {
-    final markers = <Marker>{};
-    final circles = <Circle>{};
+    final markers = <Marker>[];
+    final circles = <CircleMarker>[];
 
     if (_myPosition != null) {
       markers.add(Marker(
-        markerId: const MarkerId('me'),
-        position: LatLng(_myPosition!.latitude, _myPosition!.longitude),
-        infoWindow: InfoWindow(title: 'You ($_username)'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+        width: 28,
+        height: 28,
+        point: LatLng(_myPosition!.latitude, _myPosition!.longitude),
+        child: const Icon(Icons.location_pin, color: Colors.purple, size: 28),
       ));
     }
 
     for (final user in _nearbyUsers) {
       final isBoss = user['is_premium'] ?? false;
       markers.add(Marker(
-        markerId: MarkerId('user_${user['id']}'),
-        position: LatLng(user['lat'], user['lng']),
-        infoWindow: InfoWindow(title: '${isBoss ? '👑 ' : ''}${user['username'] ?? 'Hunter'}'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          isBoss ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueBlue,
+        width: 24,
+        height: 24,
+        point: LatLng(user['lat'], user['lng']),
+        child: Icon(
+          Icons.person_pin_circle,
+          color: isBoss ? Colors.orange : Colors.blue,
+          size: 24,
         ),
       ));
     }
 
     for (final wisp in _wisps) {
       markers.add(Marker(
-        markerId: MarkerId('wisp_${wisp['id']}'),
-        position: LatLng(wisp['lat'], wisp['lng']),
-        infoWindow: InfoWindow(title: '✨ Wisp', snippet: '+${wisp['xp'] ?? 10} XP'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
-        onTap: () => _collectWisp(wisp),
+        width: 24,
+        height: 24,
+        point: LatLng(wisp['lat'], wisp['lng']),
+        child: const Icon(Icons.bolt, color: Colors.amber, size: 24),
       ));
     }
 
     if (_isPremium) {
       for (final hotspot in _hotspots) {
         final intensity = (hotspot['visit_count'] ?? 1).toDouble();
-        circles.add(Circle(
-          circleId: CircleId('hotspot_${hotspot['id']}'),
-          center: LatLng(hotspot['lat'], hotspot['lng']),
+        circles.add(CircleMarker(
+          point: LatLng(hotspot['lat'], hotspot['lng']),
           radius: (50 + (intensity * 10).clamp(0, 200)).toDouble(),
-          fillColor: Color.fromRGBO(255, (50 - intensity * 5).clamp(0, 50).toInt(), 0,
-              (0.1 + intensity * 0.05).clamp(0.1, 0.5)),
-          strokeColor: Colors.transparent,
-          strokeWidth: 0,
+          useRadiusInMeter: true,
+          color: Color.fromRGBO(
+            255,
+            (50 - intensity * 5).clamp(0, 50).toInt(),
+            0,
+            (0.1 + intensity * 0.05).clamp(0.1, 0.5).toDouble(),
+          ),
+          borderColor: Colors.transparent,
+          borderStrokeWidth: 0,
         ));
       }
     }
@@ -691,24 +690,24 @@ class _MapScreenState extends State<MapScreen> {
   void _buildMockMarkers() {
     if (_myPosition == null) return;
     final rand = math.Random();
-    final markers = <Marker>{};
-    final circles = <Circle>{};
+    final markers = <Marker>[];
+    final circles = <CircleMarker>[];
 
     markers.add(Marker(
-      markerId: const MarkerId('me'),
-      position: LatLng(_myPosition!.latitude, _myPosition!.longitude),
-      infoWindow: const InfoWindow(title: 'You'),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+      width: 28,
+      height: 28,
+      point: LatLng(_myPosition!.latitude, _myPosition!.longitude),
+      child: const Icon(Icons.location_pin, color: Colors.purple, size: 28),
     ));
 
     for (int i = 0; i < 3; i++) {
       final lat = _myPosition!.latitude + (rand.nextDouble() - 0.5) * 0.01;
       final lng = _myPosition!.longitude + (rand.nextDouble() - 0.5) * 0.01;
       markers.add(Marker(
-        markerId: MarkerId('mock_user_$i'),
-        position: LatLng(lat, lng),
-        infoWindow: InfoWindow(title: 'Hunter ${i + 1}'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        width: 22,
+        height: 22,
+        point: LatLng(lat, lng),
+        child: const Icon(Icons.person_pin, color: Colors.blue, size: 22),
       ));
     }
 
@@ -716,10 +715,10 @@ class _MapScreenState extends State<MapScreen> {
       final lat = _myPosition!.latitude + (rand.nextDouble() - 0.5) * 0.008;
       final lng = _myPosition!.longitude + (rand.nextDouble() - 0.5) * 0.008;
       markers.add(Marker(
-        markerId: MarkerId('mock_wisp_$i'),
-        position: LatLng(lat, lng),
-        infoWindow: const InfoWindow(title: '✨ Wisp', snippet: '+10 XP'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+        width: 22,
+        height: 22,
+        point: LatLng(lat, lng),
+        child: const Icon(Icons.bolt, color: Colors.amber, size: 22),
       ));
     }
 
@@ -727,13 +726,13 @@ class _MapScreenState extends State<MapScreen> {
       for (int i = 0; i < 3; i++) {
         final lat = _myPosition!.latitude + (rand.nextDouble() - 0.5) * 0.015;
         final lng = _myPosition!.longitude + (rand.nextDouble() - 0.5) * 0.015;
-        circles.add(Circle(
-          circleId: CircleId('mock_hotspot_$i'),
-          center: LatLng(lat, lng),
+        circles.add(CircleMarker(
+          point: LatLng(lat, lng),
           radius: 80 + rand.nextDouble() * 120,
-          fillColor: const Color.fromRGBO(255, 50, 0, 0.25),
-          strokeColor: Colors.transparent,
-          strokeWidth: 0,
+          useRadiusInMeter: true,
+          color: const Color.fromRGBO(255, 50, 0, 0.25),
+          borderColor: Colors.transparent,
+          borderStrokeWidth: 0,
         ));
       }
     }
@@ -744,37 +743,19 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  Future<void> _collectWisp(Map<String, dynamic> wisp) async {
-    try {
-      await ApiService.post('/api/wisp/collect', {'wisp_id': wisp['id'], 'user_id': _userId});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✨ Wisp collected! +${wisp['credits'] ?? 5} Spazz Coins'),
-            backgroundColor: const Color(0xFF7C3AED),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-      _fetchNearby();
-    } catch (_) {}
-  }
-
   void _onPingSent(PingData ping) {
     _addPingWave(ping);
     if (_myPosition != null) {
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(_myPosition!.latitude, _myPosition!.longitude),
-          15.5,
-        ),
+      _mapController.move(
+        LatLng(_myPosition!.latitude, _myPosition!.longitude),
+        15.5,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final allCircles = {..._hotspotCircles, ..._pingWaves};
+    final allCircles = [..._hotspotCircles, ..._pingWaves];
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
@@ -795,21 +776,23 @@ class _MapScreenState extends State<MapScreen> {
                     ],
                   ),
                 )
-              : GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(_myPosition!.latitude, _myPosition!.longitude),
-                    zoom: 18.0,
-                    tilt: 65.0,
-                    bearing: _heading,
+              : FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(_myPosition!.latitude, _myPosition!.longitude),
+                    initialZoom: 18.0,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all,
+                    ),
                   ),
-                  onMapCreated: (c) => _mapController = c,
-                  markers: _markers,
-                  circles: allCircles,
-                  myLocationEnabled: false, 
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: false,
-                  mapType: MapType.normal,
-                  style: _darkMapStyle,
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.spazz_fixed',
+                    ),
+                    MarkerLayer(markers: _markers),
+                    CircleLayer(circles: allCircles),
+                  ],
                 ),
 
           // ── SPAZZ RADAR OVERLAY ──────────────────────────────────
@@ -1007,16 +990,3 @@ class _LegendItem extends StatelessWidget {
   }
 }
 
-const _darkMapStyle = '''
-[
-  {"elementType": "geometry", "stylers": [{"color": "#0A0A0F"}]},
-  {"elementType": "labels.text.fill", "stylers": [{"color": "#746855"}]},
-  {"elementType": "labels.text.stroke", "stylers": [{"color": "#242f3e"}]},
-  {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#1E1E2E"}]},
-  {"featureType": "road", "elementType": "geometry.stroke", "stylers": [{"color": "#212a37"}]},
-  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#2a2a3a"}]},
-  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#0d1b2a"}]},
-  {"featureType": "poi", "elementType": "geometry", "stylers": [{"color": "#13131A"}]},
-  {"featureType": "transit", "elementType": "geometry", "stylers": [{"color": "#2f3948"}]}
-]
-''';

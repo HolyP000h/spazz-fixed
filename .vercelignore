@@ -1,0 +1,23 @@
+# Local dependencies and generated output
+node_modules/
+Spazz/
+build/
+.dart_tool/
+.next/
+.git/
+.idea/
+.vscode/
+.Figma/
+.vercel/
+
+# Flutter and platform source not used by this Vercel configuration
+android/
+windows/
+lib/
+test/
+web/
+
+# Local configuration and secrets
+.env
+.env.*
+*.log
