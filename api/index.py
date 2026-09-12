@@ -618,14 +618,6 @@ async def google_auth(req: GoogleAuthRequest):
             "username": user.get("username"),
             "is_admin": is_admin
         }
-        supabase.table("users").update({"token": token}).eq("id", user["id"]).execute()
-        is_admin = user["id"] in ADMIN_IDS or user.get("username", "").lower() == "ben"
-        return {
-            "token": token,
-            "user_id": user["id"],
-            "username": user["username"],
-            "is_admin": is_admin
-        }
 
     user_id = "user_" + str(uuid.uuid4())[:8]
 

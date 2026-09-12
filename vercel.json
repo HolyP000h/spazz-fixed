@@ -5,8 +5,10 @@
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "favicon.ico", "use": "@vercel/static" }
   ],
+  "redirects": [
+    { "source": "/", "destination": "/app/", "permanent": false }
+  ],
   "routes": [
-    { "src": "/", "dest": "/index.html" },
     { "src": "/favicon.ico", "dest": "/favicon.ico" },
     { "src": "/static/(.*)", "dest": "/static/$1" },
     { "src": "/app", "dest": "/static/app/index.html" },

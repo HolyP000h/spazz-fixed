@@ -68,6 +68,11 @@ node_modules/
 **/local.properties
 captures/
 
+# Android release signing credentials
+android/key.properties
+*.jks
+*.keystore
+
 # Flutter platform generated folders
 ios/Flutter/ephemeral/
 macos/Flutter/ephemeral/

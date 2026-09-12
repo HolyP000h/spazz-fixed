@@ -1,11 +1,11 @@
 {
-    "name": "spazz_fixed",
-    "short_name": "spazz_fixed",
+    "name": "Spazz",
+    "short_name": "Spazz",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A0A0F",
+    "theme_color": "#7C3AED",
+    "description": "Discover nearby people, hunt wisps, and connect with Spazz.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
