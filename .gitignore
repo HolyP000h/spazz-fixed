@@ -51,3 +51,31 @@ users_db.json
 *geofence*.json
 *coords*.tmp
 spatial_index.bak
+
+# 8. Flutter & Dart
+.dart_tool/
+
+
+
+# 9. Node.js Dependencies
+node_modules/
+
+
+
+# 10. Flutter Generated Plugin Files
+.flutter-plugins
+.flutter-plugins-dependencies
+
+
+
+# 11. Flutter Build & iOS/Android Artifacts
+ios/Flutter/.last_build_id
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# Vercel
+.vercel/
+
+# Android Gradle Cache
+android/.gradle/
