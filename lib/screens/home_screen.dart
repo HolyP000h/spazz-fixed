@@ -14,10 +14,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-  Map<String, dynamic> _userData = {};
-  Map<String, dynamic> _prefs = {};
-  List<dynamic> _leaderboard = [];
+  final int _currentIndex = 0;
+  final Map<String, dynamic> _userData = {};
+  final Map<String, dynamic> _prefs = {};
+  final List<dynamic> _leaderboard = [];
   bool _loading = true;
 
   @override
@@ -612,8 +612,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                );
+                )
           },
-        );
+        )
     }
 }
