@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Spazz Design System
 /// Comprehensive color palette, typography, and spacing constants
 class SpazzTheme {
-  // ✖ Background Colors
+  static const Color background = Color(0xFF0D0E15);
   static const Color bgPrimary = Color(0xFF0A0A0F);      // Main background
   static const Color bgSecondary = Color(0xFF13131A);    // Card/secondary background
   static const Color bgTertiary = Color(0xFF1E1E2E);     // Tertiary background
